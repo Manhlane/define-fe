@@ -10,6 +10,7 @@ import AuthCard from '../../components/ui/AuthCard';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc'; // Google icon
 import { FaApple } from 'react-icons/fa'; // Apple icon
+import { PiMicrosoftOutlookLogoFill } from 'react-icons/pi'; // Outlook icon
 
 // ---- Validation schema ----
 const schema = z.object({
@@ -19,7 +20,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const LOGIN_URL = 'http://localhost:3001/auth/login';
+const LOGIN_URL = 'http://localhost:3002/auth/login';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,10 +51,14 @@ export default function LoginPage() {
   async function onSubmit(values: FormValues) {
     const { email, password } = values;
     try {
+      const userAgent = navigator.userAgent;
+      const ipAddress = await getIpAddress();
+      const location = await getLocation();
+
       const res = await fetch(LOGIN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, userAgent, ipAddress, location }),
       });
 
       if (res.ok) {
@@ -80,6 +85,30 @@ export default function LoginPage() {
     }
   }
 
+  function getLocation(): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve(undefined);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          resolve(`${latitude},${longitude}`);
+        },
+        () => resolve(undefined)
+      );
+    });
+  }
+
+  async function getIpAddress() {
+    try {
+      const res = await fetch('https://api.ipify.org?format=json');
+      const data = await res.json();
+      return data.ip;
+    } catch {
+      return undefined;
+    }
+  }
+
+
   // shared input styles
   const baseInput =
     'block w-full h-11 rounded-md border text-sm pl-10 pr-10 focus:outline-none transition-colors';
@@ -93,9 +122,8 @@ export default function LoginPage() {
       {/* Banner */}
       {banner && (
         <div
-          className={`w-full py-3 ${
-            banner.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-          }`}
+          className={`w-full py-3 ${banner.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+            }`}
         >
           <div className="relative flex items-center justify-center px-6">
             <div className="text-sm font-normal text-center">
@@ -181,18 +209,32 @@ export default function LoginPage() {
             </div>
 
             {/* Social logins with icons */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
+                onClick={() => {
+                  window.location.href = 'http://localhost:3002/auth/google';
+                }}
                 className="flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 transition"
               >
                 <FcGoogle size={20} /> Google
               </button>
+
               <button
                 type="button"
                 className="flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 transition"
               >
                 <FaApple size={20} /> Apple
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = 'http://localhost:3002/auth/outlook';
+                }}
+                className="flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 transition"
+              >
+                <PiMicrosoftOutlookLogoFill size={20} color="#0078D4" /> Outlook
               </button>
             </div>
 

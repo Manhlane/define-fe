@@ -24,7 +24,7 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-const REGISTER_URL = 'http://localhost:3001/auth/register';
+const REGISTER_URL = 'http://localhost:3002/auth/register';
 
 export default function RegisterPage() {
   const router = useRouter();

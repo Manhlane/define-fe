@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Dialog } from '@headlessui/react'
 import {
   Cog6ToothIcon,
   HomeIcon,
@@ -13,6 +14,11 @@ import {
   ArrowRightOnRectangleIcon,
   PlusIcon,
   CameraIcon,
+  Bars3Icon,
+  XMarkIcon,
+  BoltIcon,
+  CreditCardIcon,
+  UserPlusIcon,
 } from '@heroicons/react/24/outline'
 
 // Navigation
@@ -23,6 +29,12 @@ const mainNav = [
   { name: 'Clients', icon: UserGroupIcon },
   { name: 'Analytics', icon: ChartBarIcon },
   { name: 'Offer a Service', icon: CameraIcon },
+]
+
+const quickActions = [
+  { name: 'Add Booking', icon: BoltIcon },
+  { name: 'Create Payment Request', icon: CreditCardIcon },
+  { name: 'Add Client', icon: UserPlusIcon },
 ]
 
 const bottomNav = [
@@ -106,6 +118,7 @@ function classNames(...classes: string[]) {
 
 export default function DefineLayout() {
   const [active, setActive] = useState('Dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderNavItem = (item: any) => {
     const isActive = active === item.name
@@ -114,27 +127,30 @@ export default function DefineLayout() {
     return (
       <li key={item.name}>
         <button
-          onClick={() => setActive(item.name)}
+          onClick={() => {
+            setActive(item.name)
+            setSidebarOpen(false)
+          }}
           className={classNames(
+            'group flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-medium',
             isActive
               ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'text-black hover:bg-gray-100 hover:text-black dark:text-white dark:hover:bg-gray-800 dark:hover:text-white',
-            'group flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-medium transition'
+              : 'text-black hover:ring-1 hover:ring-black dark:text-white dark:hover:ring-white'
           )}
         >
           <item.icon
             aria-hidden="true"
             className={classNames(
+              'h-5 w-5 shrink-0',
               isActive
                 ? 'text-white dark:text-black'
-                : 'text-black dark:text-white',
-              'h-5 w-5 shrink-0'
+                : 'text-black dark:text-white group-hover:text-black dark:group-hover:text-white'
             )}
           />
           <span className="truncate flex items-center gap-2">
             {item.name}
             {isOfferService && (
-              <span className="inline-flex items-center rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+              <span className="inline-flex items-center rounded-md bg-green-600 px-2 py-0.5 text-xs font-medium text-white">
                 New
               </span>
             )}
@@ -149,19 +165,21 @@ export default function DefineLayout() {
     const Icon = state.icon
     return (
       <div className="flex flex-col items-center justify-center h-full py-20 text-center">
-        <Icon className="h-16 w-16 text-black dark:text-white" aria-hidden="true" />
-        <h2 className="mt-6 text-lg font-semibold text-gray-900 dark:text-white">
-          {state.title}
-        </h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{state.subtitle}</p>
-        <div className="mt-8">
-          <button
-            type="button"
-            className="inline-flex items-center rounded-md bg-black px-5 py-3 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:bg-white dark:text-black dark:hover:bg-gray-200"
-          >
-            <PlusIcon className="mr-2 h-6 w-6" aria-hidden="true" />
-            {state.action}
-          </button>
+        <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-white/15 p-12">
+          <Icon className="mx-auto h-12 w-12 text-black dark:text-white" aria-hidden="true" />
+          <h2 className="mt-6 text-lg font-semibold text-gray-900 dark:text-white">
+            {state.title}
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{state.subtitle}</p>
+          <div className="mt-8">
+            <button
+              type="button"
+              className="inline-flex items-center rounded-md border border-black px-5 py-3 text-sm font-medium text-black hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
+            >
+              <PlusIcon className="mr-2 h-5 w-5" aria-hidden="true" />
+              {state.action}
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -169,7 +187,45 @@ export default function DefineLayout() {
 
   return (
     <div>
-      {/* Sidebar */}
+      {/* Mobile header */}
+      <div className="sticky top-0 z-40 flex items-center bg-white px-4 py-2 shadow-sm dark:bg-gray-900 lg:hidden">
+        <button
+          type="button"
+          className="text-gray-700 dark:text-white"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Bars3Icon className="h-6 w-6" />
+        </button>
+        <div className="ml-3 text-lg font-semibold text-black dark:text-white">define!.</div>
+      </div>
+
+      {/* Mobile sidebar */}
+      <Dialog as="div" className="lg:hidden" open={sidebarOpen} onClose={setSidebarOpen}>
+        <div className="fixed inset-0 z-50 flex">
+          <Dialog.Panel className="relative flex w-64 flex-col bg-white dark:bg-gray-900 p-6">
+            <button
+              type="button"
+              className="absolute top-4 right-4 text-gray-700 dark:text-white"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <div className="mt-10">
+              <ul role="list" className="space-y-1">
+                {mainNav.map(renderNavItem)}
+              </ul>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+              <ul role="list" className="space-y-1">
+                {quickActions.map(renderNavItem)}
+              </ul>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+              <ul role="list" className="space-y-1">{bottomNav.map(renderNavItem)}</ul>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+
+      {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col justify-between border-r border-gray-200 bg-white px-6 pb-4 dark:border-white/10 dark:bg-gray-900">
           <div>
@@ -177,9 +233,11 @@ export default function DefineLayout() {
               define!.
             </div>
             <nav className="mt-4">
-              <ul role="list" className="space-y-1">
-                {mainNav.map(renderNavItem)}
-              </ul>
+              <ul role="list" className="space-y-1">{mainNav.map(renderNavItem)}</ul>
+            </nav>
+            <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
+            <nav>
+              <ul role="list" className="space-y-1">{quickActions.map(renderNavItem)}</ul>
             </nav>
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700 my-4" />
