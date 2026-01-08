@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.2.1",
     "@nestjs/passport": "^11.0.5",
     "bcrypt": "^6.0.0",
+    "framer-motion": "^12.23.26",
     "lucide-react": "^0.540.0",
     "next": "15.4.6",
     "next-auth": "^4.24.11",

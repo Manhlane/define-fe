@@ -1,253 +1,409 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import AuthCard from '../../components/ui/AuthCard';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { FcGoogle } from 'react-icons/fc'; // Google icon
-import { FaApple } from 'react-icons/fa'; // Apple icon
-import { PiMicrosoftOutlookLogoFill } from 'react-icons/pi'; // Outlook icon
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
+import {
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+} from '@headlessui/react';
 
-// ---- Validation schema ----
-const schema = z.object({
-  email: z.string().trim().nonempty('Email is required').email('Enter a valid email'),
-  password: z.string().trim().nonempty('Password is required'),
+/* ------------------ Validation ------------------ */
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
-type FormValues = z.infer<typeof schema>;
+const registerSchema = z
+  .object({
+    name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Enter a valid email'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(1, 'Confirm your password'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords must match',
+  });
 
-const LOGIN_URL = 'http://localhost:3002/auth/login';
+type LoginValues = z.infer<typeof loginSchema>;
+type RegisterValues = z.infer<typeof registerSchema>;
+
+const AUTH_BASE_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://localhost:3002/auth';
+const LOGIN_URL = `${AUTH_BASE_URL}/login`;
+const REGISTER_URL = `${AUTH_BASE_URL}/register`;
+const GOOGLE_AUTH_URL = `${AUTH_BASE_URL}/google`;
+
+type LoginResponse = {
+  message?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  userId?: string;
+  isVerified?: boolean;
+};
+
+type RegisterResponse = {
+  message?: string;
+  verificationToken?: string;
+};
+
+/* ------------------ Component ------------------ */
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fatalError, setFatalError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    mode: 'onSubmit',
+  const loginForm = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
   });
 
-  const [showPassword, setShowPassword] = useState(false);
+  const registerForm = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+  });
 
-  const [banner, setBanner] = useState<{ type: 'success' | 'error'; messages: string[] } | null>(
-    null
-  );
+  async function handleLogin(values: LoginValues) {
+    setLoading(true);
+    setError(null);
 
-  // auto-dismiss banner
-  useEffect(() => {
-    if (banner) {
-      const timer = setTimeout(() => setBanner(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [banner]);
-
-  async function onSubmit(values: FormValues) {
-    const { email, password } = values;
     try {
-      const userAgent = navigator.userAgent;
-      const ipAddress = await getIpAddress();
-      const location = await getLocation();
-
       const res = await fetch(LOGIN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, userAgent, ipAddress, location }),
+        body: JSON.stringify(values),
       });
 
-      if (res.ok) {
-        setBanner({ type: 'success', messages: ['Login successful! Redirecting…'] });
-        setTimeout(() => router.push('/dashboard'), 1000);
+      const body = (await res.json().catch(() => null)) as LoginResponse | null;
+
+      if (!res.ok || !body?.accessToken) {
+        setError(body?.message || 'Invalid email or password');
         return;
       }
 
-      const body = await res.json();
-      setBanner({
-        type: 'error',
-        messages: [body.message || 'Login failed. Please try again.'],
-      });
-    } catch {
-      setBanner({ type: 'error', messages: ['Network error. Please try again.'] });
-    }
-  }
-
-  // collect validation errors into banner only
-  function onError(formErrors: typeof errors) {
-    const msgs = Object.values(formErrors).map((e) => e?.message || 'Invalid input');
-    if (msgs.length > 0) {
-      setBanner({ type: 'error', messages: msgs });
-    }
-  }
-
-  function getLocation(): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) return resolve(undefined);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          resolve(`${latitude},${longitude}`);
-        },
-        () => resolve(undefined)
+      localStorage.setItem(
+        'define.auth',
+        JSON.stringify({
+          accessToken: body.accessToken,
+          refreshToken: body.refreshToken,
+          userId: body.userId,
+          email: values.email.trim().toLowerCase(),
+          isVerified: body.isVerified,
+        })
       );
-    });
-  }
 
-  async function getIpAddress() {
-    try {
-      const res = await fetch('https://api.ipify.org?format=json');
-      const data = await res.json();
-      return data.ip;
+      router.push('/dashboard');
     } catch {
-      return undefined;
+      setFatalError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   }
 
+  async function handleRegister(values: RegisterValues) {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
-  // shared input styles
-  const baseInput =
-    'block w-full h-11 rounded-md border text-sm pl-10 pr-10 focus:outline-none transition-colors';
-  const okInput =
-    'border-gray-300 focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900';
-  const errInput =
-    'border-red-300 focus:ring-2 focus:ring-red-600 focus:border-red-600';
+    try {
+      const res = await fetch(REGISTER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+        }),
+      });
+
+      let body: RegisterResponse | null = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+
+      if (!res.ok) {
+        setError(body?.message || 'Registration failed. Please try again.');
+        return;
+      }
+
+      setSuccess('Account created! Please sign in.');
+      setMode('login');
+      loginForm.reset({ email: values.email, password: '' });
+      registerForm.reset();
+      setShowRegisterPassword(false);
+      setShowRegisterConfirm(false);
+    } catch {
+      setFatalError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleGoogleLogin() {
+    setError(null);
+    setFatalError(null);
+    setGoogleLoading(true);
+    window.location.href = GOOGLE_AUTH_URL;
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Banner */}
-      {banner && (
-        <div
-          className={`w-full py-3 ${banner.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
-            }`}
-        >
-          <div className="relative flex items-center justify-center px-6">
-            <div className="text-sm font-normal text-center">
-              {banner.messages.map((msg, i) => (
-                <div key={i}>{msg}</div>
-              ))}
-            </div>
-            <button
-              onClick={() => setBanner(null)}
-              className="absolute right-4 text-inherit hover:opacity-70 text-base"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="relative min-h-screen overflow-hidden bg-white text-black">
 
-      {/* Card */}
-      <div className="flex flex-1 items-center justify-center px-4">
-        <AuthCard>
-          <form onSubmit={handleSubmit(onSubmit, onError)} noValidate className="space-y-4">
-            {/* Email */}
+      {/* ------------------ Subtle Animated Background ------------------ */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-[26%] top-[32%] h-[300px] w-[300px] rounded-full bg-neutral-200/40 blur-3xl" />
+        <div className="absolute left-[54%] top-[46%] h-[180px] w-[180px] rounded-full bg-neutral-300/40 blur-2xl" />
+      </div>
+
+      {/* ------------------ Fixed Brand/Nav ------------------ */}
+      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center bg-white/90 px-10 backdrop-blur">
+        <span className="text-xl font-semibold tracking-tight">dfn!. escrow</span>
+      </div>
+
+      {/* ------------------ Main Layout ------------------ */}
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-between gap-20 px-10 pt-16">
+
+        {/* ------------------ Left Content ------------------ */}
+        <section className="max-w-xl">
+          <div className="mt-2 space-y-2 text-5xl font-bold leading-tight tracking-tight">
+            <p className="text-black">Never chase payments.</p>
+            <p className="text-black">Secure by design.</p>
+            <p className="text-black/85">Reliable payouts.</p>
+            <p className="text-black/85">Clear financial flows.</p>
+            <p className="text-black/85">Escrow-backed transactions.</p>
+            <p className="text-black/70">Payment certainty.</p>
+            <p className="text-black/70">No unpaid work.</p>
+          </div>
+        </section>
+
+        {/* ------------------ Soft Divider ------------------ */}
+        <div className="hidden h-64 w-px shrink-0 bg-gradient-to-b from-neutral-200 via-neutral-300/70 to-neutral-200 opacity-70 lg:block" />
+
+        {/* ------------------ Login Card ------------------ */}
+        <section className="w-full max-w-sm rounded-2xl bg-white/90 backdrop-blur-md p-8 shadow-2xl ring-1 ring-neutral-200">
+          <p className="mb-1 text-center text-sm text-neutral-500">
+            {mode === 'login' ? 'Welcome back' : 'Join define!.'}
+          </p>
+
+          <h2 className="mb-6 text-center text-xl font-semibold">
+            {mode === 'login' ? 'Sign in to continue' : 'Create your account'}
+          </h2>
+
+          <form
+            onSubmit={
+              mode === 'login'
+                ? loginForm.handleSubmit(handleLogin)
+                : registerForm.handleSubmit(handleRegister)
+            }
+            className="space-y-5"
+          >
+
+            {mode === 'register' && (
+              <div>
+                <label className="mb-1 block text-sm">Name</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...registerForm.register('name')}
+                    className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm mb-1">Email</label>
+              <label className="mb-1 block text-sm">Email</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
-                  <Mail size={20} />
-                </span>
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                 <input
-                  {...register('email')}
-                  type="email"
-                  autoComplete="email"
-                  className={`${baseInput} ${errors.email ? errInput : okInput}`}
+                  {...(mode === 'login'
+                    ? loginForm.register('email')
+                    : registerForm.register('email'))}
+                  className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm mb-1">Password</label>
+              <label className="mb-1 block text-sm">Password</label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
-                  <Lock size={20} />
-                </span>
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                 <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  className={`${baseInput} ${errors.password ? errInput : okInput}`}
+                  {...(mode === 'login'
+                    ? loginForm.register('password')
+                    : registerForm.register('password'))}
+                  type={
+                    mode === 'login'
+                      ? showPassword ? 'text' : 'password'
+                      : showRegisterPassword ? 'text' : 'password'
+                  }
+                  className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-black hover:opacity-80"
+                  onClick={() =>
+                    mode === 'login'
+                      ? setShowPassword(!showPassword)
+                      : setShowRegisterPassword(!showRegisterPassword)
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {(mode === 'login' ? showPassword : showRegisterPassword) ? (
+                    <EyeOff className="h-4 w-4 text-neutral-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-neutral-500" />
+                  )}
                 </button>
               </div>
-              {/* Forgot password link */}
-              <p className="mt-2 text-sm text-right">
-                <Link href="/reset-password" className="underline hover:text-gray-700">
-                  Forgot password?
-                </Link>
-              </p>
+
+              {mode === 'login' && (
+                <div className="mt-2 text-right">
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-neutral-600 underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              )}
             </div>
 
-            {/* Submit */}
+            {mode === 'register' && (
+              <div>
+                <label className="mb-1 block text-sm">Confirm password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...registerForm.register('confirmPassword')}
+                    type={showRegisterConfirm ? 'text' : 'password'}
+                    className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterConfirm(!showRegisterConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                  >
+                    {showRegisterConfirm ? (
+                      <EyeOff className="h-4 w-4 text-neutral-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-neutral-500" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <p className="text-center text-sm text-red-600">
+                {error}
+              </p>
+            )}
+            {success && (
+              <p className="text-center text-sm text-green-700">
+                {success}
+              </p>
+            )}
+
             <button
-              disabled={isSubmitting}
-              className="w-full flex items-center justify-center rounded-md bg-black text-white py-2 font-medium hover:bg-gray-900 transition disabled:opacity-70"
+              disabled={loading}
+              className="flex h-11 w-full items-center justify-center rounded-md bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
             >
-              {isSubmitting && (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-2"></div>
-              )}
-              {isSubmitting ? 'Signing in…' : 'Sign in'}
+              {loading
+                ? mode === 'login'
+                  ? 'Signing in…'
+                  : 'Creating account…'
+                : mode === 'login'
+                  ? 'Continue to dashboard'
+                  : 'Create account'}
             </button>
 
-            {/* Divider */}
-            <div className="my-6 flex items-center gap-x-3">
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-sm text-gray-500">Or continue with</span>
-              <div className="h-px flex-1 bg-gray-200" />
+            <div className="flex items-center gap-3 py-2">
+              <div className="h-px flex-1 bg-neutral-200" />
+              <span className="text-xs text-neutral-500">Or continue with</span>
+              <div className="h-px flex-1 bg-neutral-200" />
             </div>
 
-            {/* Social logins with icons */}
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  window.location.href = 'http://localhost:3002/auth/google';
-                }}
-                className="flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 transition"
-              >
-                <FcGoogle size={20} /> Google
-              </button>
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
+            >
+              <FcGoogle />
+              {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+            </button>
 
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 transition"
-              >
-                <FaApple size={20} /> Apple
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  window.location.href = 'http://localhost:3002/auth/outlook';
-                }}
-                className="flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 transition"
-              >
-                <PiMicrosoftOutlookLogoFill size={20} color="#0078D4" /> Outlook
-              </button>
-            </div>
-
-            {/* Link to register */}
-            <p className="mt-4 text-sm text-center">
-              Don’t have an account?{' '}
-              <Link href="/register" className="underline hover:text-gray-700">
-                Create one
-              </Link>
+            <p className="pt-3 text-center text-sm text-neutral-600">
+              {mode === 'login' ? (
+                <>
+                  Don’t have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('register');
+                      setError(null);
+                      setSuccess(null);
+                      setShowPassword(false);
+                      setShowRegisterPassword(false);
+                      setShowRegisterConfirm(false);
+                    }}
+                    className="font-medium underline"
+                  >
+                    Create one
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setError(null);
+                      setSuccess(null);
+                      setShowPassword(false);
+                      setShowRegisterPassword(false);
+                      setShowRegisterConfirm(false);
+                    }}
+                    className="font-medium underline"
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
             </p>
           </form>
-        </AuthCard>
-      </div>
+        </section>
+      </main>
+
+      {/* ------------------ Fatal Error Modal ------------------ */}
+      <Dialog open={!!fatalError} onClose={() => setFatalError(null)}>
+        <DialogBackdrop className="fixed inset-0 bg-black/30" />
+        <DialogPanel className="fixed left-1/2 top-1/2 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl">
+          <p className="text-center text-sm">{fatalError}</p>
+          <button
+            onClick={() => setFatalError(null)}
+            className="mt-4 w-full rounded-md bg-black py-2 text-sm text-white"
+          >
+            Close
+          </button>
+        </DialogPanel>
+      </Dialog>
     </div>
   );
 }

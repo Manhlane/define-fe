@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import AuthCard from '../../components/ui/AuthCard';
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { CircleStackIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { NotificationsClient } from '../../lib/notifications';
 
 // ---- Validation schema ----
 const schema = z
@@ -38,20 +41,16 @@ export default function RegisterPage() {
     mode: 'onSubmit',
   });
 
+  const [isClient, setIsClient] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [banner, setBanner] = useState<{ type: 'success' | 'error'; messages: string[] } | null>(
-    null
-  );
+  const [successModal, setSuccessModal] = useState<string[] | null>(null);
+  const [errorModal, setErrorModal] = useState<string[] | null>(null);
 
-  // auto-dismiss banner
-  useEffect(() => {
-    if (banner) {
-      const timer = setTimeout(() => setBanner(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [banner]);
+useEffect(() => {
+  setIsClient(true);
+}, []);
 
   async function onSubmit(values: FormValues) {
     const { name, email, password } = values;
@@ -62,22 +61,35 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       });
 
+      let payload: any = null;
+      try {
+        payload = await res.json();
+      } catch {
+        payload = null;
+      }
+
       if (res.ok) {
-        setBanner({
-          type: 'success',
-          messages: ['Account created successfully! Please verify your email.'],
-        });
-        setTimeout(() => router.push('/login'), 1500);
+        if (payload?.verificationToken && typeof payload.verificationToken === 'string') {
+          await NotificationsClient.sendWelcomeEmail({
+            email,
+            name,
+            verificationUrl: NotificationsClient.buildVerifyUrl(payload.verificationToken),
+          });
+        } else {
+          await NotificationsClient.sendWelcomeEmail({ email, name });
+        }
+
+        setSuccessModal(['Account created successfully! Please verify your email.']);
+        setTimeout(() => {
+          router.push('/login');
+          setSuccessModal(null);
+        }, 1500);
         return;
       }
 
-      const body = await res.json();
-      setBanner({
-        type: 'error',
-        messages: [body.message || 'Registration failed. Please try again.'],
-      });
+      setErrorModal([payload?.message || 'Registration failed. Please try again.']);
     } catch {
-      setBanner({ type: 'error', messages: ['Network error. Please try again.'] });
+      setErrorModal(['Network error. Please try again.']);
     }
   }
 
@@ -85,7 +97,7 @@ export default function RegisterPage() {
   function onError(formErrors: typeof errors) {
     const msgs = Object.values(formErrors).map((e) => e?.message || 'Invalid input');
     if (msgs.length > 0) {
-      setBanner({ type: 'error', messages: msgs });
+      setErrorModal(msgs);
     }
   }
 
@@ -99,32 +111,90 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Banner */}
-      {/* Banner */}
-      {banner && (
-        <div
-          className={`w-full py-3 ${banner.type === 'error'
-              ? 'bg-red-50 text-red-700'
-              : 'bg-green-50 text-green-700'
-            }`}
+      {isClient && (
+        <Dialog
+          open={isSubmitting}
+          onClose={() => {}}
+          className="relative z-[90]"
         >
-          <div className="relative flex items-center justify-center px-6">
-            {/* Messages */}
-            <div className="text-sm font-normal text-center">
-              {banner.messages.map((msg, i) => (
-                <div key={i}>{msg}</div>
-              ))}
-            </div>
-
-            {/* Close button far right */}
-            <button
-              onClick={() => setBanner(null)}
-              className="absolute right-4 text-inherit hover:opacity-70 text-base"
+          <DialogBackdrop
+            transition
+            className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-200"
+          />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+            <DialogPanel
+              transition
+              className="w-full max-w-xs transform rounded-2xl bg-white px-6 py-8 text-center shadow-xl transition-all data-[closed]:scale-95 data-[closed]:opacity-0 dark:bg-gray-900/95 dark:text-white"
             >
-              ✕
-            </button>
+              <CircleStackIcon className="mx-auto h-10 w-10 animate-spin text-gray-900 dark:text-white" />
+              <p className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Creating your account…</p>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">We’re setting things up for you.</p>
+            </DialogPanel>
           </div>
-        </div>
+        </Dialog>
+      )}
+
+      {isClient && (
+        <Dialog
+          open={errorModal !== null}
+          onClose={() => setErrorModal(null)}
+          className="relative z-[90]"
+        >
+          <DialogBackdrop
+            transition
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-200"
+          />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+            <DialogPanel
+              transition
+              className="w-full max-w-sm transform rounded-2xl bg-white px-6 py-7 text-center shadow-xl transition-all data-[closed]:scale-95 data-[closed]:opacity-0 dark:bg-gray-900/95 dark:text-white"
+            >
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full ring-1 ring-black/20 bg-white dark:bg-transparent">
+                <ExclamationTriangleIcon className="h-7 w-7 text-black dark:text-white" />
+              </div>
+              <div className="mt-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                {errorModal?.map((msg, idx) => (
+                  <p key={idx}>{msg}</p>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorModal(null)}
+                className="mt-6 inline-flex items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+              >
+                Got it
+              </button>
+            </DialogPanel>
+          </div>
+        </Dialog>
+      )}
+
+      {isClient && (
+        <Dialog
+          open={successModal !== null}
+          onClose={() => setSuccessModal(null)}
+          className="relative z-[90]"
+        >
+          <DialogBackdrop
+            transition
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-200"
+          />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+            <DialogPanel
+              transition
+              className="w-full max-w-sm transform rounded-2xl bg-white px-6 py-7 text-center shadow-xl transition-all data-[closed]:scale-95 data-[closed]:opacity-0 dark:bg-gray-900/95 dark:text-white"
+            >
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/20">
+                <CheckCircleIcon className="h-7 w-7 text-green-600 dark:text-green-300" />
+              </div>
+              <div className="mt-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                {successModal?.map((msg, idx) => (
+                  <p key={idx}>{msg}</p>
+                ))}
+              </div>
+            </DialogPanel>
+          </div>
+        </Dialog>
       )}
 
       {/* Card */}

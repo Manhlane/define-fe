@@ -3,8 +3,15 @@
 import { useState } from 'react'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { NotificationsClient } from '../../lib/notifications'
 
 const FORGOT_PASSWORD_URL = 'http://localhost:3002/auth/forgot-password'
+
+function parseExpiryMinutes(value?: string): number | undefined {
+  if (!value) return undefined
+  const match = value.match(/(\d+)/)
+  return match ? Number(match[1]) : undefined
+}
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
@@ -20,17 +27,24 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ email }),
       })
 
+      let payload: any = null
+      try {
+        payload = await res.json()
+      } catch {
+        payload = null
+      }
+
       if (!res.ok) {
-        let message = 'Failed to send reset link. Please try again.'
-        try {
-          const data = await res.json()
-          if (data && typeof data.message === 'string') {
-            message = data.message
-          }
-        } catch {
-          // ignore JSON parsing errors; fall back to default message
-        }
+        let message = payload?.message || 'Failed to send reset link. Please try again.'
         throw new Error(message)
+      }
+
+      if (payload?.resetToken) {
+        await NotificationsClient.sendPasswordResetEmail({
+          email,
+          resetUrl: NotificationsClient.buildResetUrl(payload.resetToken),
+          expiresInMinutes: parseExpiryMinutes(payload?.expiresIn),
+        })
       }
 
       setError(null)
