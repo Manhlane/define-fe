@@ -26,6 +26,7 @@ const schema = z
   });
 
 type FormValues = z.infer<typeof schema>;
+type RegisterResponse = { message?: string; verificationToken?: string };
 
 const REGISTER_URL = 'http://localhost:3002/auth/register';
 
@@ -61,12 +62,7 @@ useEffect(() => {
         body: JSON.stringify({ name, email, password }),
       });
 
-      let payload: any = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const payload = (await res.json().catch(() => null)) as RegisterResponse | null;
 
       if (res.ok) {
         if (payload?.verificationToken && typeof payload.verificationToken === 'string') {

@@ -17,9 +17,11 @@ import {
 } from '@heroicons/react/24/outline'
 
 // Navigation
+type IconComponent = (props: ComponentProps<'svg'>) => ReactNode
+
 type NavItem = {
   name: string
-  icon: (props: ComponentProps<'svg'>) => ReactNode
+  icon: IconComponent
   href?: string
   comingSoon?: boolean
 }
@@ -37,10 +39,14 @@ const bottomNav: NavItem[] = [
 ]
 
 // Empty states
-const emptyStates: Record<
-  string,
-  { title: string; subtitle: string; action: string; icon: any }
-> = {
+type EmptyState = {
+  title: string
+  subtitle: string
+  action: string
+  icon: IconComponent
+}
+
+const emptyStates: Record<string, EmptyState> = {
   Dashboard: {
     title: 'Welcome to your Dashboard',
     subtitle: 'You’ll see a snapshot of your activity here once you get going.',
@@ -188,7 +194,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     });
   }, [pathname]);
 
-  const renderNavItem = (item: any) => {
+  const renderNavItem = (item: NavItem) => {
     const isActive = active === item.name;
     const isLogout = item.name === 'Logout';
 

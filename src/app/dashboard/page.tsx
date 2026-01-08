@@ -13,7 +13,6 @@ type SessionPayload = {
 };
 
 const STORAGE_KEY = 'define.auth';
-const LOGOUT_URL = 'http://localhost:3002/auth/logout';
 
 function DashboardPageContent() {
   const router = useRouter();
@@ -109,7 +108,7 @@ function DashboardPageContent() {
     // setStatus('idle');
     // setError('Tlhax')
     // //router.push('/login');
-  }, [router, session]);
+  }, []);
 
   useEffect(() => {
     if (hydrated && !session) {

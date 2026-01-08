@@ -32,6 +32,9 @@ type ProfileData = ProfileFormValues & {
 };
 
 type ProfileFeedback = { type: 'success' | 'error'; message: string } | null;
+type ApiMessage = { message?: string };
+type ChangePasswordPayload = ApiMessage;
+type VerificationPayload = ApiMessage & { verificationToken?: string };
 
 const SHARE_PREFIX = 'http://define.africa/';
 const SHARE_PREFIX_LABEL = 'define.africa/';
@@ -340,12 +343,7 @@ function ProfilePageContent() {
         }),
       });
 
-      let payload: any = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const payload = (await res.json().catch(() => null)) as ChangePasswordPayload | null;
 
       if (!res.ok) {
         throw new Error(payload?.message || 'Failed to change password. Please try again.');
@@ -394,12 +392,7 @@ function ProfilePageContent() {
         body: JSON.stringify({ email: targetEmail }),
       });
 
-      let payload: any = null;
-      try {
-        payload = await res.json();
-      } catch {
-        payload = null;
-      }
+      const payload = (await res.json().catch(() => null)) as VerificationPayload | null;
 
       if (!res.ok) {
         const message = payload?.message || 'Failed to generate verification link. Please try again.';

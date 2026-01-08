@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { NotificationsClient } from '../../lib/notifications'
 
 const FORGOT_PASSWORD_URL = 'http://localhost:3002/auth/forgot-password'
+type ResetPayload = { message?: string; resetToken?: string; expiresIn?: string }
 
 function parseExpiryMinutes(value?: string): number | undefined {
   if (!value) return undefined
@@ -27,15 +28,10 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ email }),
       })
 
-      let payload: any = null
-      try {
-        payload = await res.json()
-      } catch {
-        payload = null
-      }
+      const payload = (await res.json().catch(() => null)) as ResetPayload | null
 
       if (!res.ok) {
-        let message = payload?.message || 'Failed to send reset link. Please try again.'
+        const message = payload?.message || 'Failed to send reset link. Please try again.'
         throw new Error(message)
       }
 
