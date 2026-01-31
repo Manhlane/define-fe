@@ -36,7 +36,7 @@ const registerSchema = z
 type LoginValues = z.infer<typeof loginSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
 
-const AUTH_BASE_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://localhost:3002/auth';
+const AUTH_BASE_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3002/auth';
 const LOGIN_URL = `${AUTH_BASE_URL}/login`;
 const REGISTER_URL = `${AUTH_BASE_URL}/register`;
 const GOOGLE_AUTH_URL = `${AUTH_BASE_URL}/google`;
