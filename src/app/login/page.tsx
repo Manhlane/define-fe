@@ -171,16 +171,16 @@ export default function LoginPage() {
       </div>
 
       {/* ------------------ Fixed Brand/Nav ------------------ */}
-      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center bg-white/90 px-10 backdrop-blur">
-        <span className="text-xl font-semibold tracking-tight">dfn!. escrow</span>
+      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center bg-white/90 px-6 backdrop-blur sm:px-8 lg:px-10">
+        <span className="text-lg font-semibold tracking-tight sm:text-xl">dfn!. escrow</span>
       </div>
 
       {/* ------------------ Main Layout ------------------ */}
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-between gap-20 px-10 pt-16">
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-20 sm:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
 
         {/* ------------------ Left Content ------------------ */}
-        <section className="max-w-xl">
-          <div className="mt-2 space-y-2 text-5xl font-bold leading-tight tracking-tight">
+        <section className="w-full max-w-xl text-center lg:text-left">
+          <div className="mt-2 space-y-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
             <p className="text-black">Never chase payments.</p>
             <p className="text-black">Secure by design.</p>
             <p className="text-black/85">Reliable payouts.</p>
@@ -195,7 +195,7 @@ export default function LoginPage() {
         <div className="hidden h-64 w-px shrink-0 bg-gradient-to-b from-neutral-200 via-neutral-300/70 to-neutral-200 opacity-70 lg:block" />
 
         {/* ------------------ Login Card ------------------ */}
-        <section className="w-full max-w-sm rounded-2xl bg-white/90 backdrop-blur-md p-8 shadow-2xl ring-1 ring-neutral-200">
+        <section className="w-full max-w-sm rounded-2xl bg-white/90 p-6 shadow-2xl ring-1 ring-neutral-200 backdrop-blur-md sm:p-8">
           <p className="mb-1 text-center text-sm text-neutral-500">
             {mode === 'login' ? 'Welcome back' : 'Join define!.'}
           </p>
