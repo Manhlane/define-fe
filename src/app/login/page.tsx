@@ -1,12 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Receipt,
+  Wallet,
+  ShieldCheck,
+  CheckCircle,
+  Camera,
+  BadgeCheck,
+  ArrowRight,
+} from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import {
   Dialog,
@@ -59,6 +72,7 @@ type RegisterResponse = {
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
@@ -75,6 +89,21 @@ export default function LoginPage() {
   const registerForm = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
   });
+
+  const heroSlides = [
+    { text: 'Client pays upfront.', icon: Receipt },
+    { text: 'Funds stay protected.', icon: ShieldCheck },
+    { text: 'Paid when the job is done.', icon: CheckCircle },
+    { text: 'Built for photographers.', icon: Camera },
+    { text: 'No unpaid work. Ever.', icon: Wallet },
+  ];
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCarouselIndex((current) => (current + 1) % heroSlides.length);
+    }, 3200);
+    return () => clearInterval(id);
+  }, [heroSlides.length]);
 
   async function handleLogin(values: LoginValues) {
     setLoading(true);
@@ -164,10 +193,9 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-black">
 
-      {/* ------------------ Subtle Animated Background ------------------ */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[26%] top-[32%] h-[300px] w-[300px] rounded-full bg-neutral-200/40 blur-3xl" />
-        <div className="absolute left-[54%] top-[46%] h-[180px] w-[180px] rounded-full bg-neutral-300/40 blur-2xl" />
+      {/* ------------------ Background Image ------------------ */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[url('/coolbackgrounds-particles-stellar.png')] bg-cover bg-center opacity-60" />
       </div>
 
       {/* ------------------ Fixed Brand/Nav ------------------ */}
@@ -186,34 +214,70 @@ export default function LoginPage() {
       <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-12 sm:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
 
         {/* ------------------ Left Content ------------------ */}
-        <section className="w-full max-w-xl text-center lg:mt-0 lg:text-left">
-          <div className="mt-0 space-y-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-            <p className="text-black">Never chase payments.</p>
-            <p className="text-black">Secure by design.</p>
-            <p className="text-black/85">Reliable payouts.</p>
-            <p className="text-black/85">Clear financial flows.</p>
-            <p className="text-black/85">Escrow-backed transactions.</p>
-            <p className="text-black/70">Payment certainty.</p>
-            <p className="text-black/70">No unpaid work.</p>
-          </div>
-          <div className="mt-8 w-full sm:hidden">
-            <div className="h-px w-full bg-neutral-200" />
-            <div className="mt-5 space-y-3">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
-              >
-                <FcGoogle />
-                {googleLoading ? 'Redirecting…' : 'Continue with Google'}
-              </button>
-              <button
-                type="button"
-                className="flex h-11 w-full items-center justify-center rounded-md bg-black text-sm font-medium text-white hover:bg-neutral-900"
-              >
-                Create payment request
-              </button>
+        <section className="w-full max-w-xl text-center lg:mt-0">
+          <div className="mt-0 leading-snug tracking-tight">
+            <div className="sm:hidden">
+              <p className="-mt-1 text-4xl font-semibold text-black text-center">
+                Never chase payments again.
+              </p>
+              <div className="mt-4">
+                {(() => {
+                  const Icon = heroSlides[carouselIndex].icon;
+                  return (
+                    <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-white/70 ring-2 ring-black/50">
+                      <Icon className="h-16 w-16 text-black/70" />
+                    </div>
+                  );
+                })()}
+                <p className="text-3xl font-normal leading-[44px] text-black/60 text-center">
+                  {heroSlides[carouselIndex].text}
+                </p>
+                <div className="mt-6 flex items-center justify-center gap-2">
+                  {heroSlides.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setCarouselIndex(index)}
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        index === carouselIndex ? 'bg-black' : 'bg-black/30'
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="mt-6 flex flex-col items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-black py-2 text-sm font-medium text-white"
+                  >
+                    Get started
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-full border border-black py-2 text-sm font-medium text-black"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="hidden space-y-2 sm:block">
+              <p className="text-2xl font-medium text-black sm:text-3xl lg:text-4xl">
+                Clients pay before the shoot.
+              </p>
+              <p className="text-2xl font-medium text-black/85 sm:text-3xl lg:text-4xl">
+                Their money is held safely while you work.
+              </p>
+              <p className="text-2xl font-medium text-black/85 sm:text-3xl lg:text-4xl">
+                Payments are released when the job is done.
+              </p>
+              <p className="text-xl font-medium text-black/80 sm:text-2xl lg:text-3xl">
+                Built for photographers and client-based work.
+              </p>
+              <p className="text-2xl font-bold text-black sm:text-3xl lg:text-4xl">
+                Every project ends with a guaranteed payout.
+              </p>
             </div>
           </div>
         </section>
