@@ -171,16 +171,23 @@ export default function LoginPage() {
       </div>
 
       {/* ------------------ Fixed Brand/Nav ------------------ */}
-      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center bg-white/90 px-6 backdrop-blur sm:px-8 lg:px-10">
+      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white/90 px-6 backdrop-blur sm:px-8 lg:px-10">
         <span className="text-lg font-semibold tracking-tight sm:text-xl">dfn!. escrow</span>
+        <button
+          type="button"
+          onClick={() => setMode('register')}
+          className="sm:hidden rounded-full bg-black px-3 py-1.5 text-lg font-semibold tracking-tight text-white"
+        >
+          sign up
+        </button>
       </div>
 
       {/* ------------------ Main Layout ------------------ */}
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-20 sm:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-12 sm:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
 
         {/* ------------------ Left Content ------------------ */}
-        <section className="w-full max-w-xl text-center lg:text-left">
-          <div className="mt-2 space-y-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+        <section className="w-full max-w-xl text-center lg:mt-0 lg:text-left">
+          <div className="mt-0 space-y-2 text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
             <p className="text-black">Never chase payments.</p>
             <p className="text-black">Secure by design.</p>
             <p className="text-black/85">Reliable payouts.</p>
@@ -189,13 +196,33 @@ export default function LoginPage() {
             <p className="text-black/70">Payment certainty.</p>
             <p className="text-black/70">No unpaid work.</p>
           </div>
+          <div className="mt-8 w-full sm:hidden">
+            <div className="h-px w-full bg-neutral-200" />
+            <div className="mt-5 space-y-3">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
+              >
+                <FcGoogle />
+                {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+              </button>
+              <button
+                type="button"
+                className="flex h-11 w-full items-center justify-center rounded-md bg-black text-sm font-medium text-white hover:bg-neutral-900"
+              >
+                Create payment request
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* ------------------ Soft Divider ------------------ */}
         <div className="hidden h-64 w-px shrink-0 bg-gradient-to-b from-neutral-200 via-neutral-300/70 to-neutral-200 opacity-70 lg:block" />
 
         {/* ------------------ Login Card ------------------ */}
-        <section className="w-full max-w-sm rounded-2xl bg-white/90 p-6 shadow-2xl ring-1 ring-neutral-200 backdrop-blur-md sm:p-8">
+        <section className="hidden w-full max-w-sm rounded-2xl bg-white/90 p-6 shadow-2xl ring-1 ring-neutral-200 backdrop-blur-md sm:p-8 lg:block">
           <p className="mb-1 text-center text-sm text-neutral-500">
             {mode === 'login' ? 'Welcome back' : 'Join define!.'}
           </p>
