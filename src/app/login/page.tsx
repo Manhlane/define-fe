@@ -6,20 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  User,
-  Receipt,
-  Wallet,
-  ShieldCheck,
-  CheckCircle,
-  Camera,
-  BadgeCheck,
-  ArrowRight,
-} from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import {
   Dialog,
@@ -90,20 +77,22 @@ export default function LoginPage() {
     resolver: zodResolver(registerSchema),
   });
 
-  const heroSlides = [
-    { text: 'Client pays upfront.', icon: Receipt },
-    { text: 'Funds stay protected.', icon: ShieldCheck },
-    { text: 'Paid when the job is done.', icon: CheckCircle },
-    { text: 'Built for photographers.', icon: Camera },
-    { text: 'No unpaid work. Ever.', icon: Wallet },
+  const imageSlides = [
+    { src: '/images/Banknote-bro.svg', alt: 'Banknote illustration' },
+    { src: '/images/Fashion photoshoot-bro.svg', alt: 'Fashion photoshoot illustration' },
+    { src: '/images/Feeling angry-pana.svg', alt: 'Feeling angry illustration' },
+    { src: '/images/Online transactions-amico.svg', alt: 'Online transactions illustration' },
+    { src: '/images/Online transactions-bro.svg', alt: 'Online transactions illustration' },
+    { src: '/images/Studio photographer-rafiki.svg', alt: 'Studio photographer illustration' },
+    { src: '/images/Two factor authentication-amico.svg', alt: 'Two factor authentication illustration' },
   ];
 
   useEffect(() => {
     const id = setInterval(() => {
-      setCarouselIndex((current) => (current + 1) % heroSlides.length);
+      setCarouselIndex((current) => (current + 1) % imageSlides.length);
     }, 3200);
     return () => clearInterval(id);
-  }, [heroSlides.length]);
+  }, [imageSlides.length]);
 
   async function handleLogin(values: LoginValues) {
     setLoading(true);
@@ -217,23 +206,16 @@ export default function LoginPage() {
         <section className="w-full max-w-xl text-center lg:mt-0">
           <div className="mt-0 leading-snug tracking-tight">
             <div className="sm:hidden">
-              <p className="-mt-1 text-4xl font-semibold text-black text-center">
-                Never chase payments again.
-              </p>
               <div className="mt-4">
-                {(() => {
-                  const Icon = heroSlides[carouselIndex].icon;
-                  return (
-                    <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-white/70 ring-2 ring-black/50">
-                      <Icon className="h-16 w-16 text-black/70" />
-                    </div>
-                  );
-                })()}
-                <p className="text-3xl font-normal leading-[44px] text-black/60 text-center">
-                  {heroSlides[carouselIndex].text}
-                </p>
+                <div className="mx-auto mb-4 flex h-64 w-64 items-center justify-center">
+                  <img
+                    src={imageSlides[carouselIndex].src}
+                    alt={imageSlides[carouselIndex].alt}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
                 <div className="mt-6 flex items-center justify-center gap-2">
-                  {heroSlides.map((_, index) => (
+                  {imageSlides.map((_, index) => (
                     <button
                       key={index}
                       type="button"
@@ -244,21 +226,6 @@ export default function LoginPage() {
                       aria-label={`Go to slide ${index + 1}`}
                     />
                   ))}
-                </div>
-                <div className="mt-6 flex flex-col items-center justify-center gap-3">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-black py-2 text-sm font-medium text-white"
-                  >
-                    Get started
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className="w-full rounded-full border border-black py-2 text-sm font-medium text-black"
-                  >
-                    Skip
-                  </button>
                 </div>
               </div>
             </div>
