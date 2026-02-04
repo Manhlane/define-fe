@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import {
   Dialog,
@@ -60,6 +60,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [carouselFadeIn, setCarouselFadeIn] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
@@ -77,22 +78,54 @@ export default function LoginPage() {
     resolver: zodResolver(registerSchema),
   });
 
-  const imageSlides = [
-    { src: '/images/Banknote-bro.svg', alt: 'Banknote illustration' },
-    { src: '/images/Fashion photoshoot-bro.svg', alt: 'Fashion photoshoot illustration' },
-    { src: '/images/Feeling angry-pana.svg', alt: 'Feeling angry illustration' },
-    { src: '/images/Online transactions-amico.svg', alt: 'Online transactions illustration' },
-    { src: '/images/Online transactions-bro.svg', alt: 'Online transactions illustration' },
-    { src: '/images/Studio photographer-rafiki.svg', alt: 'Studio photographer illustration' },
-    { src: '/images/Two factor authentication-amico.svg', alt: 'Two factor authentication illustration' },
+  const heroSlides = [
+    {
+      title: 'Slide 1 – Pain → Relief',
+      headline: 'Never chase a payment again',
+      body: 'Get paid clearly, on time, every time.',
+      image: '/images/Banknote-bro.svg',
+      alt: 'Banknote illustration',
+    },
+    {
+      title: 'Slide 2 – Trust',
+      headline: 'Clients pay with confidence',
+      body: 'Payments feel professional, transparent, and secure.',
+      image: '/images/Two factor authentication-amico.svg',
+      alt: 'Two factor authentication illustration',
+    },
+    {
+      title: 'Slide 3 – Control',
+      headline: 'You stay in control of your money',
+      body: 'No awkward follow-ups. No confusion. Just clarity.',
+      image: '/images/Online transactions-amico.svg',
+      alt: 'Online transactions illustration',
+    },
+    {
+      title: 'Slide 4 – Simplicity',
+      headline: 'One link. One agreement. One payment.',
+      body: 'Create a payment request in under 60 seconds.',
+      image: '/images/Online transactions-bro.svg',
+      alt: 'Online transactions illustration',
+    },
+    {
+      title: 'Slide 5 – Outcome',
+      headline: 'Focus on your work, not admin',
+      body: 'Spend time shooting. We’ll handle the payments.',
+      image: '/images/Studio photographer-rafiki.svg',
+      alt: 'Studio photographer illustration',
+    },
   ];
 
   useEffect(() => {
     const id = setInterval(() => {
-      setCarouselIndex((current) => (current + 1) % imageSlides.length);
+      setCarouselFadeIn(false);
+      setTimeout(() => {
+        setCarouselIndex((current) => (current + 1) % heroSlides.length);
+        setCarouselFadeIn(true);
+      }, 180);
     }, 3200);
     return () => clearInterval(id);
-  }, [imageSlides.length]);
+  }, [heroSlides.length]);
 
   async function handleLogin(values: LoginValues) {
     setLoading(true);
@@ -206,16 +239,32 @@ export default function LoginPage() {
         <section className="w-full max-w-xl text-center lg:mt-0">
           <div className="mt-0 leading-snug tracking-tight">
             <div className="sm:hidden">
-              <div className="mt-4">
+              <div
+                className={`mt-4 transition-all duration-500 ${
+                  carouselFadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+                }`}
+              >
                 <div className="mx-auto mb-4 flex h-64 w-64 items-center justify-center">
                   <img
-                    src={imageSlides[carouselIndex].src}
-                    alt={imageSlides[carouselIndex].alt}
+                    src={heroSlides[carouselIndex].image}
+                    alt={heroSlides[carouselIndex].alt}
                     className="h-full w-full object-contain"
                   />
                 </div>
+                <p
+                  className={`mt-3 text-black ${
+                    heroSlides[carouselIndex].headline.length > 32
+                      ? 'text-xl font-medium'
+                      : 'text-2xl font-semibold'
+                  }`}
+                >
+                  {heroSlides[carouselIndex].headline}
+                </p>
+                <p className="mt-2 text-base text-neutral-700">
+                  {heroSlides[carouselIndex].body}
+                </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
-                  {imageSlides.map((_, index) => (
+                  {heroSlides.map((_, index) => (
                     <button
                       key={index}
                       type="button"
@@ -226,6 +275,35 @@ export default function LoginPage() {
                       aria-label={`Go to slide ${index + 1}`}
                     />
                   ))}
+                </div>
+              </div>
+              <div className="mt-6">
+                <div className="h-px w-full bg-neutral-200" />
+                <div className="mt-5 space-y-3">
+                  <button
+                    type="button"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white"
+                  >
+                    Get started
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={googleLoading}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
+                  >
+                    <FcGoogle />
+                    {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                  </button>
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
+                  <span>Powered by</span>
+                  <img
+                    src="/images/paystack-2.svg"
+                    alt="Paystack"
+                    className="h-4"
+                  />
                 </div>
               </div>
             </div>
