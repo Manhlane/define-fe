@@ -60,7 +60,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [carouselIndex, setCarouselIndex] = useState(0);
-  const [carouselFadeIn, setCarouselFadeIn] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
@@ -118,11 +117,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setCarouselFadeIn(false);
-      setTimeout(() => {
-        setCarouselIndex((current) => (current + 1) % heroSlides.length);
-        setCarouselFadeIn(true);
-      }, 180);
+      setCarouselIndex((current) => (current + 1) % heroSlides.length);
     }, 3200);
     return () => clearInterval(id);
   }, [heroSlides.length]);
@@ -239,11 +234,7 @@ export default function LoginPage() {
         <section className="w-full max-w-xl text-center lg:mt-0">
           <div className="mt-0 leading-snug tracking-tight">
             <div className="sm:hidden">
-              <div
-                className={`mt-4 transition-all duration-500 ${
-                  carouselFadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                }`}
-              >
+              <div className="mt-4">
                 <div className="mx-auto mb-4 flex h-64 w-64 items-center justify-center">
                   <img
                     src={heroSlides[carouselIndex].image}
@@ -251,18 +242,6 @@ export default function LoginPage() {
                     className="h-full w-full object-contain"
                   />
                 </div>
-                <p
-                  className={`mt-3 text-black ${
-                    heroSlides[carouselIndex].headline.length > 32
-                      ? 'text-xl font-medium'
-                      : 'text-2xl font-semibold'
-                  }`}
-                >
-                  {heroSlides[carouselIndex].headline}
-                </p>
-                <p className="mt-2 text-base text-neutral-700">
-                  {heroSlides[carouselIndex].body}
-                </p>
                 <div className="mt-6 flex items-center justify-center gap-2">
                   {heroSlides.map((_, index) => (
                     <button
