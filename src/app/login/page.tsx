@@ -60,6 +60,9 @@ export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [activeModal, setActiveModal] = useState<
+    'none' | 'payment' | 'payment-preview' | 'auth-gate' | 'auth'
+  >('none');
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
@@ -68,6 +71,16 @@ export default function LoginPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [paymentDraft, setPaymentDraft] = useState({
+    amount: '',
+    email: '',
+    description: '',
+  });
+  const [paymentErrors, setPaymentErrors] = useState({
+    amount: '',
+    email: '',
+    description: '',
+  });
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -207,6 +220,39 @@ export default function LoginPage() {
     window.location.href = GOOGLE_AUTH_URL;
   }
 
+  function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const amountValue = Number(paymentDraft.amount);
+    const emailValue = paymentDraft.email.trim();
+    const descriptionValue = paymentDraft.description.trim();
+    const emailOk =
+      emailValue.length === 0 ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+
+    const nextErrors = {
+      amount: amountValue > 0 ? '' : 'Amount must be greater than 0.',
+      email: emailOk ? '' : 'Enter a valid email address.',
+      description: descriptionValue.length > 0 ? '' : 'Description is required.',
+    };
+
+    setPaymentErrors(nextErrors);
+
+    if (nextErrors.amount || nextErrors.email || nextErrors.description) {
+      return;
+    }
+    setActiveModal('payment-preview');
+  }
+
+  function openPaymentModal() {
+    setPaymentErrors({ amount: '', email: '', description: '' });
+    setActiveModal('payment');
+  }
+
+  function closeActiveModal() {
+    setPaymentErrors({ amount: '', email: '', description: '' });
+    setActiveModal('none');
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-black">
 
@@ -216,24 +262,18 @@ export default function LoginPage() {
       </div>
 
       {/* ------------------ Fixed Brand/Nav ------------------ */}
-      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white/90 px-6 backdrop-blur sm:px-8 lg:px-10">
-        <span className="text-lg font-semibold tracking-tight sm:text-xl">dfn!. escrow</span>
-        <button
-          type="button"
-          onClick={() => setMode('register')}
-          className="sm:hidden rounded-full bg-black px-3 py-1.5 text-lg font-semibold tracking-tight text-white"
-        >
-          sign up
-        </button>
+      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white/90 px-6 backdrop-blur [@media(min-width:768px)]:px-8 lg:px-10">
+        <span className="text-lg font-semibold tracking-tight [@media(min-width:768px)]:text-xl">dfn!. escrow</span>
+        <div className="[@media(min-width:768px)]:hidden" />
       </div>
 
       {/* ------------------ Main Layout ------------------ */}
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-12 sm:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-12 [@media(min-width:768px)]:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
 
         {/* ------------------ Left Content ------------------ */}
         <section className="w-full max-w-xl text-center lg:mt-0">
           <div className="mt-0 leading-snug tracking-tight">
-            <div className="sm:hidden">
+            <div className="[@media(min-width:768px)]:hidden">
               <div className="mt-4">
                 <div className="mx-auto mb-4 flex h-64 w-64 items-center justify-center">
                   <img
@@ -261,19 +301,24 @@ export default function LoginPage() {
                 <div className="mt-5 space-y-3">
                   <button
                     type="button"
+                    onClick={openPaymentModal}
                     className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white"
                   >
-                    Get started
+                    Create payment link
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    onClick={handleGoogleLogin}
-                    disabled={googleLoading}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
+                    onClick={() => {
+                      setMode('login');
+                      setError(null);
+                      setSuccess(null);
+                      setShowPassword(false);
+                      setActiveModal('auth');
+                    }}
+                    className="text-sm font-medium text-black underline"
                   >
-                    <FcGoogle />
-                    {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                    Already have an account? Sign in
                   </button>
                 </div>
                 <div className="mt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
@@ -286,22 +331,40 @@ export default function LoginPage() {
                 </div>
               </div>
             </div>
-            <div className="hidden space-y-2 sm:block">
-              <p className="text-2xl font-medium text-black sm:text-3xl lg:text-4xl">
+            <div className="hidden space-y-2 text-left [@media(min-width:768px)]:block">
+              <p className="text-2xl font-bold text-black [@media(min-width:768px)]:text-3xl lg:text-4xl">
                 Clients pay before the shoot.
               </p>
-              <p className="text-2xl font-medium text-black/85 sm:text-3xl lg:text-4xl">
+              <p className="text-2xl font-semibold text-black/85 [@media(min-width:768px)]:text-3xl lg:text-4xl">
                 Their money is held safely while you work.
               </p>
-              <p className="text-2xl font-medium text-black/85 sm:text-3xl lg:text-4xl">
+              <p className="text-2xl font-medium text-black/85 [@media(min-width:768px)]:text-3xl lg:text-4xl">
                 Payments are released when the job is done.
               </p>
-              <p className="text-xl font-medium text-black/80 sm:text-2xl lg:text-3xl">
+              <p className="text-xl font-semibold text-black/80 [@media(min-width:768px)]:text-2xl lg:text-3xl">
                 Built for photographers and client-based work.
               </p>
-              <p className="text-2xl font-bold text-black sm:text-3xl lg:text-4xl">
+              <p className="text-2xl font-bold text-black [@media(min-width:768px)]:text-3xl lg:text-4xl">
                 Every project ends with a guaranteed payout.
               </p>
+              <div className="pt-6">
+                <button
+                  type="button"
+                  onClick={openPaymentModal}
+                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-black px-6 text-sm font-medium text-white"
+                >
+                  Generate payment link
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="pt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
+                <span>Powered by</span>
+                <img
+                  src="/images/paystack-2.svg"
+                  alt="Paystack"
+                  className="h-4"
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -335,7 +398,7 @@ export default function LoginPage() {
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                   <input
                     {...registerForm.register('name')}
-                    className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                    className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
                   />
                 </div>
               </div>
@@ -349,7 +412,7 @@ export default function LoginPage() {
                   {...(mode === 'login'
                     ? loginForm.register('email')
                     : registerForm.register('email'))}
-                  className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                  className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
                 />
               </div>
             </div>
@@ -367,7 +430,7 @@ export default function LoginPage() {
                       ? showPassword ? 'text' : 'password'
                       : showRegisterPassword ? 'text' : 'password'
                   }
-                  className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                  className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
                 />
                 <button
                   type="button"
@@ -406,7 +469,7 @@ export default function LoginPage() {
                   <input
                     {...registerForm.register('confirmPassword')}
                     type={showRegisterConfirm ? 'text' : 'password'}
-                    className="h-11 w-full rounded-md border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                    className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
                   />
                   <button
                     type="button"
@@ -436,7 +499,7 @@ export default function LoginPage() {
 
             <button
               disabled={loading}
-              className="flex h-11 w-full items-center justify-center rounded-md bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
+              className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
             >
               {loading
                 ? mode === 'login'
@@ -457,7 +520,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={googleLoading}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
             >
               <FcGoogle />
               {googleLoading ? 'Redirecting…' : 'Continue with Google'}
@@ -517,6 +580,401 @@ export default function LoginPage() {
           >
             Close
           </button>
+        </DialogPanel>
+      </Dialog>
+
+      {/* ------------------ Unified Modal ------------------ */}
+      <Dialog
+        open={activeModal !== 'none'}
+        onClose={closeActiveModal}
+        className="fixed inset-0 z-50"
+      >
+        <DialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
+        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto">
+          {activeModal === 'payment' && (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Generate payment link</h3>
+                <button
+                  type="button"
+                  onClick={closeActiveModal}
+                  className="text-sm text-neutral-500"
+                >
+                  Close
+                </button>
+              </div>
+
+              <form className="mt-5 space-y-4" onSubmit={handlePaymentSubmit}>
+                <div>
+                  <label className="mb-1 block text-sm">Amount (ZAR)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="2500"
+                    value={paymentDraft.amount}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        amount: event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                  />
+                  {paymentErrors.amount && (
+                    <p className="mt-1 text-xs text-red-600">{paymentErrors.amount}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm">Client email (optional)</label>
+                  <input
+                    type="email"
+                    placeholder="client@email.com"
+                    value={paymentDraft.email}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        email: event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                  />
+                  {paymentErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{paymentErrors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm">Description</label>
+                  <textarea
+                    rows={4}
+                    placeholder="Wedding photography – 10 edited photos"
+                    value={paymentDraft.description}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        description: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-2xl border border-neutral-300 px-4 py-3 text-sm focus:border-black focus:outline-none"
+                  />
+                  {paymentErrors.description && (
+                    <p className="mt-1 text-xs text-red-600">{paymentErrors.description}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
+                >
+                  Generate payment link
+                </button>
+              </form>
+            </>
+          )}
+
+          {activeModal === 'payment-preview' && (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Payment preview</h3>
+                <button
+                  type="button"
+                  onClick={closeActiveModal}
+                  className="text-sm text-neutral-500"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-3 text-sm text-neutral-700">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">Amount (ZAR)</p>
+                  <p className="text-base font-semibold text-black">
+                    {paymentDraft.amount || '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">Client email</p>
+                  <p className="text-base text-black">
+                    {paymentDraft.email || 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-neutral-500">Description</p>
+                  <p className="text-base text-black">
+                    {paymentDraft.description || '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('auth-gate')}
+                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
+                >
+                  Continue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveModal('payment')}
+                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black hover:bg-neutral-50"
+                >
+                  Edit payment details
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeModal === 'auth-gate' && (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">
+                  Create an account to send this payment request.
+                </h3>
+                <button
+                  type="button"
+                  onClick={closeActiveModal}
+                  className="text-sm text-neutral-500"
+                >
+                  Close
+                </button>
+              </div>
+              <p className="mt-3 text-sm text-neutral-600">
+                Your payment link is ready — this just helps us protect payments.
+              </p>
+
+              <div className="mt-5 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={googleLoading}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
+                >
+                  <FcGoogle />
+                  {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError(null);
+                    setSuccess(null);
+                    setShowRegisterPassword(false);
+                    setShowRegisterConfirm(false);
+                    setActiveModal('auth');
+                  }}
+                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black hover:bg-neutral-50"
+                >
+                  Create account with email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError(null);
+                    setSuccess(null);
+                    setShowPassword(false);
+                    setActiveModal('auth');
+                  }}
+                  className="text-sm font-medium text-black underline"
+                >
+                  Already have an account? Sign in
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeModal === 'auth' && (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">
+                  {mode === 'login' ? 'Sign in' : 'Create your account'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={closeActiveModal}
+                  className="text-sm text-neutral-500"
+                >
+                  Close
+                </button>
+              </div>
+
+              <form
+                onSubmit={
+                  mode === 'login'
+                    ? loginForm.handleSubmit(handleLogin)
+                    : registerForm.handleSubmit(handleRegister)
+                }
+                className="mt-5 space-y-4"
+              >
+                {mode === 'register' && (
+                  <div>
+                    <label className="mb-1 block text-sm">Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                      <input
+                        {...registerForm.register('name')}
+                        className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="mb-1 block text-sm">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                    <input
+                      {...(mode === 'login'
+                        ? loginForm.register('email')
+                        : registerForm.register('email'))}
+                      className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                    <input
+                      {...(mode === 'login'
+                        ? loginForm.register('password')
+                        : registerForm.register('password'))}
+                      type={
+                        mode === 'login'
+                          ? showPassword ? 'text' : 'password'
+                          : showRegisterPassword ? 'text' : 'password'
+                      }
+                      className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        mode === 'login'
+                          ? setShowPassword(!showPassword)
+                          : setShowRegisterPassword(!showRegisterPassword)
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                    >
+                      {(mode === 'login' ? showPassword : showRegisterPassword) ? (
+                        <EyeOff className="h-4 w-4 text-neutral-500" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-neutral-500" />
+                      )}
+                    </button>
+                  </div>
+                  {mode === 'login' && (
+                    <div className="mt-2 text-right">
+                      <Link
+                        href="/forgot-password"
+                        className="text-xs text-neutral-600 underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {mode === 'register' && (
+                  <div>
+                    <label className="mb-1 block text-sm">Confirm password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                      <input
+                        {...registerForm.register('confirmPassword')}
+                        type={showRegisterConfirm ? 'text' : 'password'}
+                        className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegisterConfirm(!showRegisterConfirm)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
+                      >
+                        {showRegisterConfirm ? (
+                          <EyeOff className="h-4 w-4 text-neutral-500" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-neutral-500" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {error && <p className="text-sm text-red-600">{error}</p>}
+                {success && <p className="text-sm text-green-700">{success}</p>}
+
+                <button
+                  disabled={loading}
+                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
+                >
+                  {loading
+                    ? mode === 'login'
+                      ? 'Signing in…'
+                      : 'Creating account…'
+                    : mode === 'login'
+                      ? 'Sign in'
+                      : 'Create account'}
+                </button>
+
+                <div className="flex items-center gap-3 py-1">
+                  <div className="h-px flex-1 bg-neutral-200" />
+                  <span className="text-xs text-neutral-500">Or continue with</span>
+                  <div className="h-px flex-1 bg-neutral-200" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={googleLoading}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-neutral-300 text-sm hover:bg-neutral-50 disabled:opacity-70"
+                >
+                  <FcGoogle />
+                  {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                </button>
+
+                <p className="text-center text-sm text-neutral-600">
+                  {mode === 'login' ? (
+                    <>
+                      Don’t have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('register');
+                          setError(null);
+                          setSuccess(null);
+                          setShowRegisterPassword(false);
+                          setShowRegisterConfirm(false);
+                        }}
+                        className="font-medium underline"
+                      >
+                        Sign up
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('login');
+                          setError(null);
+                          setSuccess(null);
+                          setShowPassword(false);
+                        }}
+                        className="font-medium underline"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </p>
+              </form>
+            </>
+          )}
         </DialogPanel>
       </Dialog>
     </div>
