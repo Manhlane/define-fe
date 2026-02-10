@@ -63,6 +63,7 @@ export default function LoginPage() {
   const [activeModal, setActiveModal] = useState<
     'none' | 'payment' | 'payment-preview' | 'auth-gate' | 'auth'
   >('none');
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
@@ -75,11 +76,14 @@ export default function LoginPage() {
     amount: '',
     email: '',
     description: '',
+    protectedPayment: true,
+    deliveryDate: '',
+    autoRelease: '3 days (recommended)',
   });
   const [paymentErrors, setPaymentErrors] = useState({
-    amount: '',
-    email: '',
-    description: '',
+    amount: false,
+    email: false,
+    description: false,
   });
 
   const loginForm = useForm<LoginValues>({
@@ -134,6 +138,17 @@ export default function LoginPage() {
     }, 3200);
     return () => clearInterval(id);
   }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (!isGeneratingLink) {
+      return;
+    }
+    const id = setTimeout(() => {
+      setActiveModal('auth-gate');
+      setIsGeneratingLink(false);
+    }, 3500);
+    return () => clearTimeout(id);
+  }, [isGeneratingLink]);
 
   async function handleLogin(values: LoginValues) {
     setLoading(true);
@@ -230,9 +245,9 @@ export default function LoginPage() {
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
 
     const nextErrors = {
-      amount: amountValue > 0 ? '' : 'Amount must be greater than 0.',
-      email: emailOk ? '' : 'Enter a valid email address.',
-      description: descriptionValue.length > 0 ? '' : 'Description is required.',
+      amount: !(amountValue > 100),
+      email: !emailOk,
+      description: !(descriptionValue.length > 0),
     };
 
     setPaymentErrors(nextErrors);
@@ -244,12 +259,12 @@ export default function LoginPage() {
   }
 
   function openPaymentModal() {
-    setPaymentErrors({ amount: '', email: '', description: '' });
+    setPaymentErrors({ amount: false, email: false, description: false });
     setActiveModal('payment');
   }
 
   function closeActiveModal() {
-    setPaymentErrors({ amount: '', email: '', description: '' });
+    setPaymentErrors({ amount: false, email: false, description: false });
     setActiveModal('none');
   }
 
@@ -590,7 +605,7 @@ export default function LoginPage() {
         className="fixed inset-0 z-50"
       >
         <DialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
-        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto">
+        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto md:max-h-none md:overflow-visible md:max-w-lg">
           {activeModal === 'payment' && (
             <>
               <div className="flex items-center justify-between">
@@ -620,11 +635,10 @@ export default function LoginPage() {
                         amount: event.target.value,
                       }))
                     }
-                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
+                      paymentErrors.amount ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                    }`}
                   />
-                  {paymentErrors.amount && (
-                    <p className="mt-1 text-xs text-red-600">{paymentErrors.amount}</p>
-                  )}
                 </div>
 
                 <div>
@@ -639,11 +653,10 @@ export default function LoginPage() {
                         email: event.target.value,
                       }))
                     }
-                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
+                      paymentErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                    }`}
                   />
-                  {paymentErrors.email && (
-                    <p className="mt-1 text-xs text-red-600">{paymentErrors.email}</p>
-                  )}
                 </div>
 
                 <div>
@@ -658,19 +671,86 @@ export default function LoginPage() {
                         description: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-neutral-300 px-4 py-3 text-sm focus:border-black focus:outline-none"
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none ${
+                      paymentErrors.description ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                    }`}
                   />
-                  {paymentErrors.description && (
-                    <p className="mt-1 text-xs text-red-600">{paymentErrors.description}</p>
-                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-neutral-900">Protected Payment</p>
+                  <label className="flex items-center justify-between rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
+                    <span>Hold funds until delivery is confirmed</span>
+                    <span className="relative inline-flex h-6 w-11 items-center">
+                      <input
+                        type="checkbox"
+                        checked={paymentDraft.protectedPayment}
+                        onChange={(event) =>
+                          setPaymentDraft((draft) => ({
+                            ...draft,
+                            protectedPayment: event.target.checked,
+                          }))
+                        }
+                        className="peer sr-only"
+                      />
+                      <span className="absolute inset-0 rounded-full bg-neutral-300 transition peer-checked:bg-emerald-500" />
+                      <span className="relative h-5 w-5 translate-x-0 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+                    </span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm">Expected delivery date (optional)</label>
+                  <input
+                    type="date"
+                    value={paymentDraft.deliveryDate}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        deliveryDate: event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm">Auto-release after</label>
+                  <select
+                    value={paymentDraft.autoRelease}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        autoRelease: event.target.value,
+                      }))
+                    }
+                    className="h-11 w-full appearance-none rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                  >
+                    <option>3 days (recommended)</option>
+                    <option>7 days</option>
+                    <option>14 days</option>
+                  </select>
                 </div>
 
                 <button
                   type="submit"
                   className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
                 >
-                  Generate payment link
+                  Generate Protected Link
                 </button>
+
+                <div className="text-center text-xs text-neutral-500">
+                  Client funds are protected
+                </div>
+
+                <div className="pt-2 text-center text-xs text-neutral-500">
+                  Transactions powered by{' '}
+                  <img
+                    src="/images/paystack-2.svg"
+                    alt="Paystack"
+                    className="inline h-4 align-middle"
+                  />
+                </div>
               </form>
             </>
           )}
@@ -689,22 +769,40 @@ export default function LoginPage() {
               </div>
 
               <div className="mt-5 space-y-3 text-sm text-neutral-700">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">Amount (ZAR)</p>
-                  <p className="text-base font-semibold text-black">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Amount (ZAR)</p>
+                  <p className="text-right text-base font-semibold text-black">
                     {paymentDraft.amount || '—'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">Client email</p>
-                  <p className="text-base text-black">
-                    {paymentDraft.email || 'Not provided'}
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Client Email</p>
+                  <p className="text-right text-base text-black">
+                    {paymentDraft.email || 'not provided'}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">Description</p>
-                  <p className="text-base text-black">
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Description</p>
+                  <p className="text-right text-base text-black">
                     {paymentDraft.description || '—'}
+                  </p>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Protected Payment</p>
+                  <p className="text-right text-base text-black">
+                    {paymentDraft.protectedPayment ? 'enabled' : 'disabled'}
+                  </p>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Expected Delivery Date</p>
+                  <p className="text-right text-base text-black">
+                    {paymentDraft.deliveryDate || 'not set'}
+                  </p>
+                </div>
+                <div className="flex items-start justify-between gap-4">
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Auto-Release After</p>
+                  <p className="text-right text-base text-black">
+                    {(paymentDraft.autoRelease || 'not set').toLowerCase()}
                   </p>
                 </div>
               </div>
@@ -712,10 +810,18 @@ export default function LoginPage() {
               <div className="mt-6 space-y-3">
                 <button
                   type="button"
-                  onClick={() => setActiveModal('auth-gate')}
-                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
+                  onClick={() => setIsGeneratingLink(true)}
+                  disabled={isGeneratingLink}
+                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
                 >
-                  Continue
+                  {isGeneratingLink ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      Generating Payment Link
+                    </>
+                  ) : (
+                    'Continue'
+                  )}
                 </button>
                 <button
                   type="button"
@@ -727,6 +833,7 @@ export default function LoginPage() {
               </div>
             </>
           )}
+
 
           {activeModal === 'auth-gate' && (
             <>
@@ -744,6 +851,9 @@ export default function LoginPage() {
               </div>
               <p className="mt-3 text-sm text-neutral-600">
                 Your payment link is ready — this just helps us protect payments.
+              </p>
+              <p className="mt-2 text-sm text-neutral-600">
+                We&apos;ll save this link in your dashboard so you can track payment status.
               </p>
 
               <div className="mt-5 space-y-3">
@@ -779,7 +889,7 @@ export default function LoginPage() {
                     setShowPassword(false);
                     setActiveModal('auth');
                   }}
-                  className="text-sm font-medium text-black underline"
+                  className="text-sm font-normal text-neutral-500 underline"
                 >
                   Already have an account? Sign in
                 </button>
