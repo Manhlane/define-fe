@@ -94,6 +94,9 @@ export default function LoginPage() {
     resolver: zodResolver(registerSchema),
   });
 
+  const loginErrors = loginForm.formState.errors;
+  const registerErrors = registerForm.formState.errors;
+
   const heroSlides = [
     {
       title: 'Slide 1 – Pain → Relief',
@@ -413,7 +416,9 @@ export default function LoginPage() {
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                   <input
                     {...registerForm.register('name')}
-                    className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                    className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                      registerErrors.name ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                    }`}
                   />
                 </div>
               </div>
@@ -427,7 +432,11 @@ export default function LoginPage() {
                   {...(mode === 'login'
                     ? loginForm.register('email')
                     : registerForm.register('email'))}
-                  className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                  className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                    mode === 'login'
+                      ? (loginErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                      : (registerErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                  }`}
                 />
               </div>
             </div>
@@ -445,7 +454,11 @@ export default function LoginPage() {
                       ? showPassword ? 'text' : 'password'
                       : showRegisterPassword ? 'text' : 'password'
                   }
-                  className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                  className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                    mode === 'login'
+                      ? (loginErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                      : (registerErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                  }`}
                 />
                 <button
                   type="button"
@@ -484,7 +497,9 @@ export default function LoginPage() {
                   <input
                     {...registerForm.register('confirmPassword')}
                     type={showRegisterConfirm ? 'text' : 'password'}
-                    className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                    className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                      registerErrors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                    }`}
                   />
                   <button
                     type="button"
@@ -927,7 +942,9 @@ export default function LoginPage() {
                       <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                       <input
                         {...registerForm.register('name')}
-                        className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                        className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                          registerErrors.name ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                        }`}
                       />
                     </div>
                   </div>
@@ -941,7 +958,11 @@ export default function LoginPage() {
                       {...(mode === 'login'
                         ? loginForm.register('email')
                         : registerForm.register('email'))}
-                      className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-3 text-sm focus:border-black focus:outline-none"
+                      className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                        mode === 'login'
+                          ? (loginErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                          : (registerErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                      }`}
                     />
                   </div>
                 </div>
@@ -959,7 +980,11 @@ export default function LoginPage() {
                           ? showPassword ? 'text' : 'password'
                           : showRegisterPassword ? 'text' : 'password'
                       }
-                      className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                      className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                        mode === 'login'
+                          ? (loginErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                          : (registerErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
+                      }`}
                     />
                     <button
                       type="button"
@@ -997,7 +1022,9 @@ export default function LoginPage() {
                       <input
                         {...registerForm.register('confirmPassword')}
                         type={showRegisterConfirm ? 'text' : 'password'}
-                        className="h-11 w-full rounded-full border border-neutral-300 pl-10 pr-10 text-sm focus:border-black focus:outline-none"
+                        className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                          registerErrors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
+                        }`}
                       />
                       <button
                         type="button"
