@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, User, ArrowRight } from 'lucide-react';
+import { CheckCircleIcon, ExclamationCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
 import { FcGoogle } from 'react-icons/fc';
 import {
   Dialog,
@@ -53,6 +54,72 @@ type RegisterResponse = {
   message?: string;
   verificationToken?: string;
 };
+
+type AlertVariant = 'success' | 'error';
+
+function Alert({
+  variant,
+  message,
+  onClose,
+}: {
+  variant: AlertVariant;
+  message: string;
+  onClose: () => void;
+}) {
+  const isSuccess = variant === 'success';
+  return (
+    <div
+      className={`rounded-md p-4 ${
+        isSuccess ? 'bg-green-50' : 'bg-red-50'
+      }`}
+    >
+      <div className="flex">
+        <div className="shrink-0">
+          {isSuccess ? (
+            <CheckCircleIcon
+              aria-hidden="true"
+              className="size-5 text-green-400"
+            />
+          ) : (
+            <ExclamationCircleIcon
+              aria-hidden="true"
+              className="size-5 text-red-400"
+            />
+          )}
+        </div>
+        <div className="ml-3">
+          <p
+            className={`text-sm font-medium ${
+              isSuccess ? 'text-green-800' : 'text-red-800'
+            }`}
+          >
+            {message}
+          </p>
+        </div>
+        <div className="ml-auto pl-3">
+          <div className="-mx-1.5 -my-1.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className={`inline-flex rounded-md p-1.5 ${
+                isSuccess
+                  ? 'bg-green-50 text-green-500 hover:bg-green-100'
+                  : 'bg-red-50 text-red-500 hover:bg-red-100'
+              } focus-visible:outline-none focus-visible:ring-2 ${
+                isSuccess
+                  ? 'focus-visible:ring-green-600 focus-visible:ring-offset-2 focus-visible:ring-offset-green-50'
+                  : 'focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:ring-offset-red-50'
+              }`}
+            >
+              <span className="sr-only">Dismiss</span>
+              <XMarkIcon aria-hidden="true" className="size-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ------------------ Component ------------------ */
 
@@ -339,13 +406,15 @@ export default function LoginPage() {
                     Already have an account? Sign in
                   </button>
                 </div>
-                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
-                  <span>Powered by</span>
-                  <img
-                    src="/images/paystack-2.svg"
-                    alt="Paystack"
-                    className="h-4"
-                  />
+                <div className="mt-4 text-xs text-neutral-500">
+                  <div className="mx-auto inline-flex items-center gap-2">
+                    <span>Powered by</span>
+                    <img
+                      src="/images/paystack-2.svg"
+                      alt="Paystack"
+                      className="h-4"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -375,13 +444,15 @@ export default function LoginPage() {
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-              <div className="pt-4 flex items-center justify-center gap-2 text-xs text-neutral-500">
-                <span>Powered by</span>
-                <img
-                  src="/images/paystack-2.svg"
-                  alt="Paystack"
-                  className="h-4"
-                />
+              <div className="pt-4 text-xs text-neutral-500">
+                <div className="mx-auto inline-flex items-center gap-2">
+                  <span>Powered by</span>
+                  <img
+                    src="/images/paystack-2.svg"
+                    alt="Paystack"
+                    className="h-4"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -517,14 +588,18 @@ export default function LoginPage() {
             )}
 
             {error && (
-              <p className="text-center text-sm text-red-600">
-                {error}
-              </p>
+              <Alert
+                variant="error"
+                message={error}
+                onClose={() => setError(null)}
+              />
             )}
             {success && (
-              <p className="text-center text-sm text-green-700">
-                {success}
-              </p>
+              <Alert
+                variant="success"
+                message={success}
+                onClose={() => setSuccess(null)}
+              />
             )}
 
             <button
@@ -1041,8 +1116,20 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                {success && <p className="text-sm text-green-700">{success}</p>}
+                {error && (
+                  <Alert
+                    variant="error"
+                    message={error}
+                    onClose={() => setError(null)}
+                  />
+                )}
+                {success && (
+                  <Alert
+                    variant="success"
+                    message={success}
+                    onClose={() => setSuccess(null)}
+                  />
+                )}
 
                 <button
                   disabled={loading}
