@@ -233,22 +233,6 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      if (process.env.NODE_ENV === 'development') {
-        // TODO: REMOVE BEFORE DEPLOYING - local dev auth bypass.
-        localStorage.setItem(
-          'define.auth',
-          JSON.stringify({
-            accessToken: 'dev-token',
-            refreshToken: 'dev-refresh',
-            userId: 'dev-user',
-            email: values.email.trim().toLowerCase(),
-            isVerified: true,
-          })
-        );
-        router.push('/dashboard');
-        return;
-      }
-
       const res = await fetch(LOGIN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
