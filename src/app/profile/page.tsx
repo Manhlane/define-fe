@@ -32,7 +32,9 @@ type VerificationPayload = ApiMessage & { verificationToken?: string };
 
 const SHARE_PREFIX = 'http://define.africa/';
 const SHARE_PREFIX_LABEL = 'define.africa/';
-const RESEND_VERIFICATION_URL = 'http://localhost:3002/auth/resend-verification';
+const AUTH_BASE_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth';
+const RESEND_VERIFICATION_URL = `${AUTH_BASE_URL}/resend-verification`;
 
 function mapProfileToForm(profile: ProfileData): ProfileFormValues {
   return {

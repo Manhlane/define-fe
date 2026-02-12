@@ -20,20 +20,25 @@ jest.mock('next/link', () => ({
 }));
 
 describe('LoginPage', () => {
+  let setIntervalSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.useFakeTimers();
+    setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => 0 as unknown as NodeJS.Timeout);
   });
 
   afterEach(() => {
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
+    setIntervalSpy.mockRestore();
   });
 
   it('opens the payment modal from the create payment link button', async () => {
     render(<LoginPage />);
 
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const openButton = screen.getByRole('button', { name: /create payment link/i });
-    await userEvent.click(openButton);
+    await user.click(openButton);
 
     expect(
       screen.getByRole('heading', { name: /generate payment link/i })
@@ -43,13 +48,14 @@ describe('LoginPage', () => {
   it('shows red outlines on invalid payment fields', async () => {
     render(<LoginPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /create payment link/i }));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.click(screen.getByRole('button', { name: /create payment link/i }));
 
     const submitButton = screen.getByRole('button', {
       name: /generate protected link/i,
     });
 
-    await userEvent.click(submitButton);
+    await user.click(submitButton);
 
     const amountInput = screen.getByLabelText(/amount/i);
     const descriptionInput = screen.getByLabelText(/description/i);
@@ -61,20 +67,21 @@ describe('LoginPage', () => {
   it('moves from preview to auth gate after loading on continue', async () => {
     render(<LoginPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /create payment link/i }));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.click(screen.getByRole('button', { name: /create payment link/i }));
 
     const amountInput = screen.getByLabelText(/amount/i);
     const descriptionInput = screen.getByLabelText(/description/i);
 
-    await userEvent.type(amountInput, '150');
-    await userEvent.type(descriptionInput, 'Portrait session');
+    await user.type(amountInput, '150');
+    await user.type(descriptionInput, 'Portrait session');
 
-    await userEvent.click(screen.getByRole('button', { name: /generate protected link/i }));
+    await user.click(screen.getByRole('button', { name: /generate protected link/i }));
 
     expect(screen.getByRole('heading', { name: /payment preview/i })).toBeInTheDocument();
 
     const continueButton = screen.getByRole('button', { name: /continue/i });
-    await userEvent.click(continueButton);
+    await user.click(continueButton);
 
     expect(screen.getByText(/generating payment link/i)).toBeInTheDocument();
 
@@ -92,18 +99,19 @@ describe('LoginPage', () => {
   it('opens the auth modal from the auth gate', async () => {
     render(<LoginPage />);
 
-    await userEvent.click(screen.getByRole('button', { name: /create payment link/i }));
-    await userEvent.type(screen.getByLabelText(/amount/i), '150');
-    await userEvent.type(screen.getByLabelText(/description/i), 'Portrait session');
-    await userEvent.click(screen.getByRole('button', { name: /generate protected link/i }));
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await user.click(screen.getByRole('button', { name: /create payment link/i }));
+    await user.type(screen.getByLabelText(/amount/i), '150');
+    await user.type(screen.getByLabelText(/description/i), 'Portrait session');
+    await user.click(screen.getByRole('button', { name: /generate protected link/i }));
 
-    await userEvent.click(screen.getByRole('button', { name: /continue/i }));
+    await user.click(screen.getByRole('button', { name: /continue/i }));
 
     act(() => {
       jest.advanceTimersByTime(3500);
     });
 
-    await userEvent.click(
+    await user.click(
       screen.getByRole('button', { name: /create account with email/i })
     );
 

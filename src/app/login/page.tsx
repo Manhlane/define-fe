@@ -720,8 +720,11 @@ export default function LoginPage() {
 
               <form className="mt-5 space-y-4" onSubmit={handlePaymentSubmit}>
                 <div>
-                  <label className="mb-1 block text-sm">Amount (ZAR)</label>
+                  <label htmlFor="payment-amount" className="mb-1 block text-sm">
+                    Amount (ZAR)
+                  </label>
                   <input
+                    id="payment-amount"
                     type="number"
                     inputMode="decimal"
                     min="0"
@@ -741,8 +744,11 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Client email (optional)</label>
+                  <label htmlFor="payment-email" className="mb-1 block text-sm">
+                    Client email (optional)
+                  </label>
                   <input
+                    id="payment-email"
                     type="email"
                     placeholder="client@email.com"
                     value={paymentDraft.email}
@@ -759,8 +765,11 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Description</label>
+                  <label htmlFor="payment-description" className="mb-1 block text-sm">
+                    Description
+                  </label>
                   <textarea
+                    id="payment-description"
                     rows={4}
                     placeholder="Wedding photography – 10 edited photos"
                     value={paymentDraft.description}

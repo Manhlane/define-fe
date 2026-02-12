@@ -1,13 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import DashboardPage from './page';
 
+const mockSearchParams = {
+  get: jest.fn(() => null),
+};
+const mockRouter = {
+  push: jest.fn(),
+  replace: jest.fn(),
+};
+
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: jest.fn(),
-  }),
-  useSearchParams: () => ({
-    get: () => null,
-  }),
+  useRouter: () => mockRouter,
+  useSearchParams: () => mockSearchParams,
   usePathname: () => '/dashboard',
 }));
 
@@ -17,8 +21,14 @@ jest.mock('./layout', () => ({
 }));
 
 describe('DashboardPage', () => {
-  it('renders the dashboard page', () => {
+  it('renders the dashboard page', async () => {
+    window.localStorage.setItem(
+      'define.auth',
+      JSON.stringify({ accessToken: 'token-123', email: 'user@example.com' })
+    );
     render(<DashboardPage />);
-    expect(screen.getByText(/dashboard/i)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /dashboard/i })
+    ).toBeInTheDocument();
   });
 });

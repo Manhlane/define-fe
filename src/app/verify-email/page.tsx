@@ -5,7 +5,9 @@ import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { NotificationsClient } from '../../lib/notifications'
 
-const FORGOT_PASSWORD_URL = 'http://localhost:3002/auth/forgot-password'
+const AUTH_BASE_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth'
+const FORGOT_PASSWORD_URL = `${AUTH_BASE_URL}/forgot-password`
 type ResetPayload = { message?: string; resetToken?: string; expiresIn?: string }
 
 function parseExpiryMinutes(value?: string): number | undefined {

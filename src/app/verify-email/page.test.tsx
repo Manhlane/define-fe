@@ -13,6 +13,8 @@ jest.mock('next/navigation', () => ({
 describe('VerifyEmailPage', () => {
   it('renders the verify email page', () => {
     render(<VerifyEmailPage />);
-    expect(screen.getByText(/verify/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /reset your password/i })
+    ).toBeInTheDocument();
   });
 });

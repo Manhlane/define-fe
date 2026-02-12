@@ -28,7 +28,9 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 type RegisterResponse = { message?: string; verificationToken?: string };
 
-const REGISTER_URL = 'http://localhost:3002/auth/register';
+const AUTH_BASE_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth';
+const REGISTER_URL = `${AUTH_BASE_URL}/register`;
 
 export default function RegisterPage() {
   const router = useRouter();

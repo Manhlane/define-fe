@@ -95,7 +95,9 @@ function classNames(...classes: string[]) {
 }
 
 const STORAGE_KEY = 'define.auth';
-const LOGOUT_URL = 'http://localhost:3002/auth/logout';
+const AUTH_BASE_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth';
+const LOGOUT_URL = `${AUTH_BASE_URL}/logout`;
 
 function resolveNavByPath(pathname: string): string {
   const navItemsWithHref = [...mainNav, ...bottomNav].filter(

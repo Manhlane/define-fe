@@ -10,6 +10,6 @@ jest.mock('next/navigation', () => ({
 describe('RegisterPage', () => {
   it('renders the register page', () => {
     render(<RegisterPage />);
-    expect(screen.getByText(/create/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
   });
 });
