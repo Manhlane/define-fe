@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -125,6 +125,7 @@ function Alert({
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [activeModal, setActiveModal] = useState<
@@ -220,11 +221,34 @@ export default function LoginPage() {
     return () => clearTimeout(id);
   }, [isGeneratingLink]);
 
+  useEffect(() => {
+    const openTarget = searchParams?.get('open');
+    if (openTarget === 'payment') {
+      openPaymentModal();
+    }
+  }, [searchParams]);
+
   async function handleLogin(values: LoginValues) {
     setLoading(true);
     setError(null);
 
     try {
+      if (process.env.NODE_ENV === 'development') {
+        // TODO: REMOVE BEFORE DEPLOYING - local dev auth bypass.
+        localStorage.setItem(
+          'define.auth',
+          JSON.stringify({
+            accessToken: 'dev-token',
+            refreshToken: 'dev-refresh',
+            userId: 'dev-user',
+            email: values.email.trim().toLowerCase(),
+            isVerified: true,
+          })
+        );
+        router.push('/dashboard');
+        return;
+      }
+
       const res = await fetch(LOGIN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -359,26 +383,23 @@ export default function LoginPage() {
         <section className="w-full max-w-xl text-center lg:mt-0">
           <div className="mt-0 leading-snug tracking-tight">
             <div className="[@media(min-width:768px)]:hidden">
-              <div className="mt-4">
-                <div className="mx-auto mb-4 flex h-64 w-64 items-center justify-center">
-                  <img
-                    src={heroSlides[carouselIndex].image}
-                    alt={heroSlides[carouselIndex].alt}
-                    className="h-full w-full object-contain"
-                  />
+              <div className="mt-2 space-y-2 text-left">
+                <p className="text-2xl font-bold text-black">Clients pay before the shoot.</p>
+                <p className="text-2xl font-semibold text-black/85">
+                  Money is held safely while you work.
+                </p>
+                <p className="text-2xl font-medium text-black/85">
+                  Released when the job is done.
+                </p>
+                <div className="pt-3">
+                  <p className="text-xl font-semibold text-black/80">
+                    Built for photographers.
+                  </p>
                 </div>
-                <div className="mt-6 flex items-center justify-center gap-2">
-                  {heroSlides.map((_, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setCarouselIndex(index)}
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        index === carouselIndex ? 'bg-black' : 'bg-black/30'
-                      }`}
-                      aria-label={`Go to slide ${index + 1}`}
-                    />
-                  ))}
+                <div className="pt-3">
+                  <p className="text-2xl font-bold text-black">
+                    Every project ends with a guaranteed payout.
+                  </p>
                 </div>
               </div>
               <div className="mt-6">
@@ -423,17 +444,21 @@ export default function LoginPage() {
                 Clients pay before the shoot.
               </p>
               <p className="text-2xl font-semibold text-black/85 [@media(min-width:768px)]:text-3xl lg:text-4xl">
-                Their money is held safely while you work.
+                Money is held safely while you work.
               </p>
               <p className="text-2xl font-medium text-black/85 [@media(min-width:768px)]:text-3xl lg:text-4xl">
-                Payments are released when the job is done.
+                Released when the job is done.
               </p>
-              <p className="text-xl font-semibold text-black/80 [@media(min-width:768px)]:text-2xl lg:text-3xl">
-                Built for photographers and client-based work.
-              </p>
-              <p className="text-2xl font-bold text-black [@media(min-width:768px)]:text-3xl lg:text-4xl">
-                Every project ends with a guaranteed payout.
-              </p>
+              <div className="pt-3">
+                <p className="text-xl font-semibold text-black/80 [@media(min-width:768px)]:text-2xl lg:text-3xl">
+                  Built for photographers.
+                </p>
+              </div>
+              <div className="pt-3">
+                <p className="text-2xl font-bold text-black [@media(min-width:768px)]:text-3xl lg:text-4xl">
+                  Every project ends with a guaranteed payout.
+                </p>
+              </div>
               <div className="pt-6">
                 <button
                   type="button"

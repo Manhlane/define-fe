@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, type ComponentProps, type ReactNode }
 import { usePathname, useRouter } from 'next/navigation'
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import {
-  Cog6ToothIcon,
   HomeIcon,
   CurrencyDollarIcon,
   UserGroupIcon,
@@ -14,6 +13,8 @@ import {
   Bars3Icon,
   XMarkIcon,
   CircleStackIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline'
 
 // Navigation
@@ -27,14 +28,12 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  { name: 'Dashboard', icon: HomeIcon, href: '/dashboard' },
-  { name: 'Payments', icon: CurrencyDollarIcon, href: '/payments' },
-  { name: 'Clients', icon: UserGroupIcon, href: '/clients' },
+  { name: 'Home', icon: HomeIcon, href: '/' },
+  { name: 'Transactions', icon: CircleStackIcon, href: '/transactions' },
 ]
 
 const bottomNav: NavItem[] = [
   { name: 'Profile', icon: UserCircleIcon, href: '/profile' },
-  { name: 'Settings', icon: Cog6ToothIcon },
   { name: 'Logout', icon: ArrowRightOnRectangleIcon },
 ]
 
@@ -65,17 +64,23 @@ const emptyStates: Record<string, EmptyState> = {
     action: 'Add Client',
     icon: UserGroupIcon,
   },
+  Transactions: {
+    title: 'No transactions yet',
+    subtitle: 'Your protected payment links and payouts will show up here.',
+    action: 'Create payment link',
+    icon: CircleStackIcon,
+  },
+  Home: {
+    title: 'Welcome home',
+    subtitle: 'Start by generating a payment link or reviewing your activity.',
+    action: 'Generate payment link',
+    icon: HomeIcon,
+  },
   Profile: {
     title: 'Your profile is empty',
     subtitle: 'Complete your profile so clients can know more about you.',
     action: 'Edit Profile',
     icon: UserCircleIcon,
-  },
-  Settings: {
-    title: 'No settings configured',
-    subtitle: 'Manage your account and app preferences here.',
-    action: 'Update Settings',
-    icon: Cog6ToothIcon,
   },
   Logout: {
     title: 'Ready to sign out?',
@@ -122,6 +127,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [active, setActive] = useState(() => resolveNavByPath(pathname ?? '/dashboard'));
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleGlobalLogout = useCallback(async () => {
@@ -225,24 +231,18 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           }}
           disabled={isLogout && isLoggingOut}
           className={classNames(
-            'group flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60',
-            isActive
-              ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'text-black hover:ring-1 hover:ring-inset hover:ring-black dark:text-white dark:hover:ring-white dark:hover:ring-inset'
+            isActive ? 'bg-gray-50' : 'hover:bg-gray-50',
+            'group flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-left text-sm font-semibold text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-300 dark:hover:bg-white/5 dark:bg-transparent'
           )}
         >
           <item.icon
             aria-hidden="true"
             className={classNames(
-              'h-5 w-5 shrink-0',
-              isActive
-                ? 'text-white dark:text-black'
-                : 'text-black dark:text-white group-hover:text-black dark:group-hover:text-white'
+              'h-5 w-5 shrink-0 text-gray-400',
+              isActive ? 'text-gray-500 dark:text-gray-300' : 'group-hover:text-gray-500 dark:group-hover:text-gray-300'
             )}
           />
-          <span className="truncate flex items-center gap-2">
-            {item.name}
-          </span>
+          {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
         </button>
       </li>
     )
@@ -307,7 +307,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       {/* Mobile sidebar */}
       <Dialog as="div" className="lg:hidden" open={sidebarOpen} onClose={setSidebarOpen}>
         <div className="fixed inset-0 z-50 flex">
-          <Dialog.Panel className="relative flex w-64 flex-col bg-white p-6 dark:bg-gray-900">
+          <Dialog.Panel className="relative flex w-72 flex-col border-r border-gray-200 bg-white px-6 py-5 dark:border-white/10 dark:bg-gray-900">
             <button
               type="button"
               className="absolute right-4 top-4 text-gray-700 dark:text-white"
@@ -331,12 +331,29 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       </Dialog>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex grow flex-col border-r border-gray-200 bg-white px-6 pb-4 dark:border-white/10 dark:bg-gray-900">
-          <div className="flex h-16 items-center text-xl font-semibold text-black dark:text-white">
-            define!.
+      <div
+        className={classNames(
+          'hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col',
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'
+        )}
+      >
+        <div className="relative flex grow flex-col border-r border-gray-200 bg-white px-6 pb-4 dark:border-white/10 dark:bg-gray-900">
+          <div className="relative flex h-16 items-center justify-between text-xl font-semibold text-black dark:text-white">
+            {!sidebarCollapsed && <span>define!.</span>}
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed((prev) => !prev)}
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5"
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRightIcon className="h-5 w-5" />
+              ) : (
+                <ChevronLeftIcon className="h-5 w-5" />
+              )}
+            </button>
           </div>
-          <div className="flex flex-1 min-h-0 flex-col">
+          <div className="relative flex flex-1 min-h-0 flex-col">
             <div className="flex-1 overflow-y-auto pr-2">
               <nav className="mt-4">
                 <ul role="list" className="space-y-1">
@@ -355,7 +372,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={classNames(sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72')}>
         <main className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
           {pathname === '/dashboard' && active !== 'Dashboard' ? renderEmptyState() : children}
         </main>
