@@ -52,7 +52,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /create payment link/i }));
 
     const submitButton = screen.getByRole('button', {
-      name: /generate protected link/i,
+      name: /generate payment link/i,
     });
 
     await user.click(submitButton);
@@ -76,7 +76,7 @@ describe('LoginPage', () => {
     await user.type(amountInput, '150');
     await user.type(descriptionInput, 'Portrait session');
 
-    await user.click(screen.getByRole('button', { name: /generate protected link/i }));
+    await user.click(screen.getByRole('button', { name: /generate payment link/i }));
 
     expect(screen.getByRole('heading', { name: /payment preview/i })).toBeInTheDocument();
 
@@ -103,7 +103,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /create payment link/i }));
     await user.type(screen.getByLabelText(/amount/i), '150');
     await user.type(screen.getByLabelText(/description/i), 'Portrait session');
-    await user.click(screen.getByRole('button', { name: /generate protected link/i }));
+    await user.click(screen.getByRole('button', { name: /generate payment link/i }));
 
     await user.click(screen.getByRole('button', { name: /continue/i }));
 
