@@ -140,11 +140,11 @@ export default function LoginPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const [paymentDraft, setPaymentDraft] = useState({
     amount: '',
     email: '',
     description: '',
-    protectedPayment: true,
     deliveryDate: '',
     autoRelease: '3 days (recommended)',
   });
@@ -215,11 +215,28 @@ export default function LoginPage() {
       return;
     }
     const id = setTimeout(() => {
-      setActiveModal('auth-gate');
+      setActiveModal(hasSession ? 'none' : 'auth-gate');
       setIsGeneratingLink(false);
     }, 3500);
     return () => clearTimeout(id);
-  }, [isGeneratingLink]);
+  }, [hasSession, isGeneratingLink]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const stored = window.localStorage.getItem('define.auth');
+    if (!stored) {
+      setHasSession(false);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as { accessToken?: string };
+      setHasSession(Boolean(parsed?.accessToken));
+    } catch {
+      setHasSession(false);
+    }
+  }, []);
 
   useEffect(() => {
     const openTarget = searchParams?.get('open');
@@ -257,7 +274,8 @@ export default function LoginPage() {
         })
       );
 
-      router.push('/dashboard');
+      setHasSession(true);
+      router.push('/home');
     } catch {
       setFatalError('Network error. Please try again.');
     } finally {
@@ -347,7 +365,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-black">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-white text-black">
 
       {/* ------------------ Background Image ------------------ */}
       <div className="pointer-events-none absolute inset-0">
@@ -355,13 +373,13 @@ export default function LoginPage() {
       </div>
 
       {/* ------------------ Fixed Brand/Nav ------------------ */}
-      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white/90 px-6 backdrop-blur [@media(min-width:768px)]:px-8 lg:px-10">
-        <span className="text-lg font-semibold tracking-tight [@media(min-width:768px)]:text-xl">dfn!. escrow</span>
+      <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white px-6 [@media(min-width:768px)]:px-8 lg:px-10">
+        <span className="text-lg font-semibold tracking-tight [@media(min-width:768px)]:text-xl">dfn!.</span>
         <div className="[@media(min-width:768px)]:hidden" />
       </div>
 
       {/* ------------------ Main Layout ------------------ */}
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-12 [@media(min-width:768px)]:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
+      <main className="relative z-10 mx-auto flex min-h-[100dvh] max-w-7xl flex-col items-center justify-center gap-10 px-6 pt-12 [@media(min-width:768px)]:px-8 lg:flex-row lg:justify-between lg:gap-20 lg:px-10 lg:pt-16">
 
         {/* ------------------ Left Content ------------------ */}
         <section className="w-full max-w-xl text-center lg:mt-0">
@@ -496,7 +514,7 @@ export default function LoginPage() {
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                   <input
                     {...registerForm.register('name')}
-                    className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                    className={`h-11 w-full rounded-full border pl-10 pr-3 text-base sm:text-sm focus:outline-none ${
                       registerErrors.name ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                     }`}
                   />
@@ -512,7 +530,7 @@ export default function LoginPage() {
                   {...(mode === 'login'
                     ? loginForm.register('email')
                     : registerForm.register('email'))}
-                  className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                  className={`h-11 w-full rounded-full border pl-10 pr-3 text-base sm:text-sm focus:outline-none ${
                     mode === 'login'
                       ? (loginErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
                       : (registerErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
@@ -534,7 +552,7 @@ export default function LoginPage() {
                       ? showPassword ? 'text' : 'password'
                       : showRegisterPassword ? 'text' : 'password'
                   }
-                  className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                  className={`h-11 w-full rounded-full border pl-10 pr-10 text-base sm:text-sm focus:outline-none ${
                     mode === 'login'
                       ? (loginErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
                       : (registerErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
@@ -577,7 +595,7 @@ export default function LoginPage() {
                   <input
                     {...registerForm.register('confirmPassword')}
                     type={showRegisterConfirm ? 'text' : 'password'}
-                    className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                    className={`h-11 w-full rounded-full border pl-10 pr-10 text-base sm:text-sm focus:outline-none ${
                       registerErrors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                     }`}
                   />
@@ -737,7 +755,7 @@ export default function LoginPage() {
                         amount: event.target.value,
                       }))
                     }
-                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
+                    className={`h-11 w-full rounded-full border px-4 text-base sm:text-sm focus:outline-none ${
                       paymentErrors.amount ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                     }`}
                   />
@@ -758,7 +776,7 @@ export default function LoginPage() {
                         email: event.target.value,
                       }))
                     }
-                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
+                    className={`h-11 w-full rounded-full border px-4 text-base sm:text-sm focus:outline-none ${
                       paymentErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                     }`}
                   />
@@ -779,32 +797,10 @@ export default function LoginPage() {
                         description: event.target.value,
                       }))
                     }
-                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none ${
+                    className={`w-full rounded-2xl border px-4 py-3 text-base sm:text-sm focus:outline-none ${
                       paymentErrors.description ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                     }`}
                   />
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-neutral-900">Protected Payment</p>
-                  <label className="flex items-center justify-between rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
-                    <span>Hold funds until delivery is confirmed</span>
-                    <span className="relative inline-flex h-6 w-11 items-center">
-                      <input
-                        type="checkbox"
-                        checked={paymentDraft.protectedPayment}
-                        onChange={(event) =>
-                          setPaymentDraft((draft) => ({
-                            ...draft,
-                            protectedPayment: event.target.checked,
-                          }))
-                        }
-                        className="peer sr-only"
-                      />
-                      <span className="absolute inset-0 rounded-full bg-neutral-300 transition peer-checked:bg-emerald-500" />
-                      <span className="relative h-5 w-5 translate-x-0 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
-                    </span>
-                  </label>
                 </div>
 
                 <div>
@@ -818,7 +814,7 @@ export default function LoginPage() {
                         deliveryDate: event.target.value,
                       }))
                     }
-                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-base sm:text-sm focus:border-black focus:outline-none"
                   />
                 </div>
 
@@ -832,7 +828,7 @@ export default function LoginPage() {
                         autoRelease: event.target.value,
                       }))
                     }
-                    className="h-11 w-full appearance-none rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className="h-11 w-full appearance-none rounded-full border border-neutral-300 px-4 text-base sm:text-sm focus:border-black focus:outline-none"
                   >
                     <option>3 days (recommended)</option>
                     <option>7 days</option>
@@ -844,12 +840,8 @@ export default function LoginPage() {
                   type="submit"
                   className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
                 >
-                  Generate Protected Link
+                  Generate Payment Link
                 </button>
-
-                <div className="text-center text-xs text-neutral-500">
-                  Client funds are protected
-                </div>
 
                 <div className="pt-2 text-center text-xs text-neutral-500">
                   Transactions powered by{' '}
@@ -893,12 +885,6 @@ export default function LoginPage() {
                   <p className="text-sm font-normal tracking-wide text-neutral-500">Description</p>
                   <p className="text-right text-base text-black">
                     {paymentDraft.description || '—'}
-                  </p>
-                </div>
-                <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Protected Payment</p>
-                  <p className="text-right text-base text-black">
-                    {paymentDraft.protectedPayment ? 'enabled' : 'disabled'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
@@ -1035,7 +1021,7 @@ export default function LoginPage() {
                       <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
                       <input
                         {...registerForm.register('name')}
-                        className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                        className={`h-11 w-full rounded-full border pl-10 pr-3 text-base sm:text-sm focus:outline-none ${
                           registerErrors.name ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                         }`}
                       />
@@ -1051,7 +1037,7 @@ export default function LoginPage() {
                       {...(mode === 'login'
                         ? loginForm.register('email')
                         : registerForm.register('email'))}
-                      className={`h-11 w-full rounded-full border pl-10 pr-3 text-sm focus:outline-none ${
+                      className={`h-11 w-full rounded-full border pl-10 pr-3 text-base sm:text-sm focus:outline-none ${
                         mode === 'login'
                           ? (loginErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
                           : (registerErrors.email ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
@@ -1073,7 +1059,7 @@ export default function LoginPage() {
                           ? showPassword ? 'text' : 'password'
                           : showRegisterPassword ? 'text' : 'password'
                       }
-                      className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                      className={`h-11 w-full rounded-full border pl-10 pr-10 text-base sm:text-sm focus:outline-none ${
                         mode === 'login'
                           ? (loginErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
                           : (registerErrors.password ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black')
@@ -1115,7 +1101,7 @@ export default function LoginPage() {
                       <input
                         {...registerForm.register('confirmPassword')}
                         type={showRegisterConfirm ? 'text' : 'password'}
-                        className={`h-11 w-full rounded-full border pl-10 pr-10 text-sm focus:outline-none ${
+                        className={`h-11 w-full rounded-full border pl-10 pr-10 text-base sm:text-sm focus:outline-none ${
                           registerErrors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-neutral-300 focus:border-black'
                         }`}
                       />

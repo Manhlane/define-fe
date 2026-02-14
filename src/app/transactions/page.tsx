@@ -1,4 +1,4 @@
-import DefineLayout from '../dashboard/layout';
+import DefineLayout from '../../components/DefineLayout';
 
 export default function TransactionsPage() {
   return (

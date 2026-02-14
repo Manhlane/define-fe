@@ -15,7 +15,7 @@ async function post(path: string, payload: unknown): Promise<void> {
 }
 
 export const NotificationsClient = {
-  dashboardUrl: `${APP_BASE_URL}/dashboard`,
+  dashboardUrl: `${APP_BASE_URL}/home`,
   buildVerifyUrl: (token: string) =>
     `${APP_BASE_URL}/verify-email?token=${encodeURIComponent(token)}`,
   buildResetUrl: (token: string) =>
@@ -23,7 +23,7 @@ export const NotificationsClient = {
   sendWelcomeEmail: (payload: { email: string; name?: string; verificationUrl?: string | null }) =>
     post('/auth/welcome', {
       ...payload,
-      dashboardUrl: `${APP_BASE_URL}/dashboard`,
+      dashboardUrl: `${APP_BASE_URL}/home`,
     }),
   sendVerificationEmail: (payload: { email: string; name?: string; verificationUrl: string }) =>
     post('/auth/verify-email', payload),

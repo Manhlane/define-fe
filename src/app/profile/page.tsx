@@ -1,6 +1,6 @@
 'use client';
 
-import DefineLayout from '../dashboard/layout';
+import DefineLayout from '../../components/DefineLayout';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import {

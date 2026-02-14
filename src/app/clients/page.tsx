@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import DefineLayout from '../dashboard/layout';
+import DefineLayout from '../../components/DefineLayout';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 

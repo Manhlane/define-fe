@@ -5,14 +5,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import {
   HomeIcon,
-  CurrencyDollarIcon,
-  UserGroupIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
-  PlusIcon,
   Bars3Icon,
   XMarkIcon,
-  CircleStackIcon,
+  ClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline'
@@ -28,67 +25,14 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  { name: 'Home', icon: HomeIcon, href: '/' },
-  { name: 'Transactions', icon: CircleStackIcon, href: '/transactions' },
+  { name: 'Home', icon: HomeIcon, href: '/home' },
+  { name: 'Transactions', icon: ClockIcon, href: '/transactions' },
 ]
 
 const bottomNav: NavItem[] = [
   { name: 'Profile', icon: UserCircleIcon, href: '/profile' },
   { name: 'Logout', icon: ArrowRightOnRectangleIcon },
 ]
-
-// Empty states
-type EmptyState = {
-  title: string
-  subtitle: string
-  action: string
-  icon: IconComponent
-}
-
-const emptyStates: Record<string, EmptyState> = {
-  Dashboard: {
-    title: 'Welcome to your Dashboard',
-    subtitle: 'You’ll see a snapshot of your activity here once you get going.',
-    action: 'Explore Features',
-    icon: HomeIcon,
-  },
-  Payments: {
-    title: 'No payments recorded',
-    subtitle: 'Track your earnings and manage your payouts here.',
-    action: 'Create Payment Request',
-    icon: CurrencyDollarIcon,
-  },
-  Clients: {
-    title: 'No clients added',
-    subtitle: 'Invite or add clients to start working with them.',
-    action: 'Add Client',
-    icon: UserGroupIcon,
-  },
-  Transactions: {
-    title: 'No transactions yet',
-    subtitle: 'Your protected payment links and payouts will show up here.',
-    action: 'Create payment link',
-    icon: CircleStackIcon,
-  },
-  Home: {
-    title: 'Welcome home',
-    subtitle: 'Start by generating a payment link or reviewing your activity.',
-    action: 'Generate payment link',
-    icon: HomeIcon,
-  },
-  Profile: {
-    title: 'Your profile is empty',
-    subtitle: 'Complete your profile so clients can know more about you.',
-    action: 'Edit Profile',
-    icon: UserCircleIcon,
-  },
-  Logout: {
-    title: 'Ready to sign out?',
-    subtitle: 'You can always log back in anytime.',
-    action: 'Logout',
-    icon: ArrowRightOnRectangleIcon,
-  },
-}
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
@@ -106,28 +50,24 @@ function resolveNavByPath(pathname: string): string {
 
   const matchedNav = navItemsWithHref.find((item) => {
     if (!item.href) return false;
-    if (item.href === '/') {
-      return pathname === '/';
+    if (item.href === '/home') {
+      return pathname === '/home';
     }
     if (pathname === item.href) return true;
-    return item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`);
+    return item.href !== '/home' && pathname.startsWith(`${item.href}/`);
   });
 
   if (matchedNav) {
     return matchedNav.name;
   }
 
-  if (pathname.startsWith('/dashboard')) {
-    return 'Dashboard';
-  }
-
-  return 'Dashboard';
+  return 'Home';
 }
 
 export default function DefineLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [active, setActive] = useState(() => resolveNavByPath(pathname ?? '/dashboard'));
+  const [active, setActive] = useState(() => resolveNavByPath(pathname ?? '/home'));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -180,7 +120,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     // Give the user a moment to register the loader before redirecting.
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    setActive('Dashboard');
+    setActive('Home');
     router.push('/login');
     //setIsLoggingOut(false);
   }, [isLoggingOut, router]);
@@ -191,15 +131,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     }
 
     const resolved = resolveNavByPath(pathname);
-    const isDashboardRoot = pathname === '/dashboard';
-
-    setActive((prev) => {
-      if (isDashboardRoot) {
-        // Preserve manual selection for dashboard secondary sections (Bookings, Payments placeholder, etc.)
-        return prev;
-      }
-      return resolved;
-    });
+    setActive(resolved);
   }, [pathname]);
 
   const renderNavItem = (item: NavItem) => {
@@ -227,8 +159,8 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
 
             setActive(item.name);
             setSidebarOpen(false);
-            if (pathname !== '/dashboard') {
-              router.push('/dashboard');
+            if (pathname !== '/home') {
+              router.push('/home');
             }
           }}
           disabled={isLogout && isLoggingOut}
@@ -250,31 +182,6 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  const renderEmptyState = () => {
-    const state = emptyStates[active] ?? emptyStates['Dashboard']
-    const Icon = state.icon
-    return (
-      <div className="flex flex-col items-center justify-center h-full py-20 text-center">
-        <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-white/15 p-12">
-          <Icon className="mx-auto h-12 w-12 text-black dark:text-white" aria-hidden="true" />
-          <h2 className="mt-6 text-lg font-semibold text-gray-900 dark:text-white">
-            {state.title}
-          </h2>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{state.subtitle}</p>
-          <div className="mt-8">
-            <button
-              type="button"
-              className="inline-flex items-center rounded-md border border-black px-5 py-3 text-sm font-medium text-black hover:bg-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
-            >
-              <PlusIcon className="mr-2 h-5 w-5" aria-hidden="true" />
-              {state.action}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="relative">
       <Dialog open={isLoggingOut} onClose={() => {}} className="relative z-[90]">
@@ -287,7 +194,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
             transition
             className="w-full max-w-xs transform rounded-2xl bg-white px-6 py-8 text-center shadow-xl transition-all data-[closed]:scale-95 data-[closed]:opacity-0 dark:bg-gray-900/95 dark:text-white"
           >
-            <CircleStackIcon className="mx-auto h-10 w-10 animate-spin text-gray-900 dark:text-white" />
+            <ClockIcon className="mx-auto h-10 w-10 animate-spin text-gray-900 dark:text-white" />
             <p className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Signing out…</p>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">We’ll be right here when you get back.</p>
           </DialogPanel>
@@ -295,29 +202,51 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       </Dialog>
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 flex items-center bg-white px-4 py-2 shadow-sm dark:bg-gray-900 lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 py-3 dark:bg-gray-900 lg:hidden">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="text-gray-700 dark:text-white"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            className="text-lg font-semibold text-black dark:text-white"
+            onClick={() => router.push('/home')}
+            aria-label="Go to home"
+          >
+            dfn!.
+          </button>
+        </div>
         <button
           type="button"
           className="text-gray-700 dark:text-white"
-          onClick={() => setSidebarOpen(true)}
+          onClick={() => router.push('/profile')}
+          aria-label="Profile"
         >
-          <Bars3Icon className="h-6 w-6" />
+          <UserCircleIcon className="h-6 w-6" />
         </button>
-        <div className="ml-3 text-lg font-semibold text-black dark:text-white">define!.</div>
       </div>
 
       {/* Mobile sidebar */}
       <Dialog as="div" className="lg:hidden" open={sidebarOpen} onClose={setSidebarOpen}>
         <div className="fixed inset-0 z-50 flex">
           <Dialog.Panel className="relative flex w-72 flex-col border-r border-gray-200 bg-white px-6 py-5 dark:border-white/10 dark:bg-gray-900">
-            <button
-              type="button"
-              className="absolute right-4 top-4 text-gray-700 dark:text-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-            <div className="mt-10 flex min-h-0 flex-1 flex-col">
+            <div className="flex items-center justify-between text-lg font-semibold text-black dark:text-white">
+              <span>dfn!.</span>
+              <button
+                type="button"
+                className="text-gray-700 dark:text-white"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close navigation"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="mt-6 flex min-h-0 flex-1 flex-col">
               <div className="flex-1 overflow-y-auto pr-2">
                 <ul role="list" className="space-y-1">
                   {mainNav.map(renderNavItem)}
@@ -376,7 +305,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       {/* Main content */}
       <div className={classNames(sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72')}>
         <main className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
-          {pathname === '/dashboard' && active !== 'Dashboard' ? renderEmptyState() : children}
+          {children}
         </main>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import DefineLayout from '../dashboard/layout';
+import DefineLayout from '../../components/DefineLayout';
 import { FormEvent, useMemo, useState } from 'react';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import { ArrowDownTrayIcon, PlusIcon, BanknotesIcon } from '@heroicons/react/24/outline'
