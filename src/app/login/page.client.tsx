@@ -374,7 +374,7 @@ export default function LoginPage() {
 
       {/* ------------------ Fixed Brand/Nav ------------------ */}
       <div className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between bg-white px-6 [@media(min-width:768px)]:px-8 lg:px-10">
-        <span className="text-lg font-semibold tracking-tight [@media(min-width:768px)]:text-xl">dfn!.</span>
+        <span className="text-xl font-semibold tracking-tight [@media(min-width:768px)]:text-2xl">dfn!.</span>
         <div className="[@media(min-width:768px)]:hidden" />
       </div>
 
@@ -385,59 +385,50 @@ export default function LoginPage() {
         <section className="w-full max-w-xl text-center lg:mt-0">
           <div className="mt-0 leading-snug tracking-tight">
             <div className="[@media(min-width:768px)]:hidden">
-              <div className="mt-2 space-y-2 text-left">
-                <p className="text-2xl font-bold text-black">Clients pay before the shoot.</p>
-                <p className="text-2xl font-semibold text-black/85">
-                  Money is held safely while you work.
+              <div className="mt-3 text-left">
+                <p className="text-5xl font-normal leading-tight text-black">
+                  Local <span className="text-black">photographer</span>
+                  <br />
+                  or global brand.
                 </p>
-                <p className="text-2xl font-medium text-black/85">
-                  Released when the job is done.
+                <p className="mt-3 text-5xl font-normal leading-tight text-black">
+                  Get paid before the shoot.
                 </p>
-                <div className="pt-3">
-                  <p className="text-xl font-semibold text-black/80">
-                    Built for photographers.
-                  </p>
-                </div>
-                <div className="pt-3">
-                  <p className="text-2xl font-bold text-black">
-                    Every project ends with a guaranteed payout.
-                  </p>
-                </div>
+                <p className="mt-4 text-2xl text-black/70">
+                  Money held securely. Released when the job is done.
+                </p>
               </div>
-              <div className="mt-6">
-                <div className="h-px w-full bg-neutral-200" />
-                <div className="mt-5 space-y-3">
-                  <button
-                    type="button"
-                    onClick={openPaymentModal}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white"
-                  >
-                    Create payment link
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('login');
-                      setError(null);
-                      setSuccess(null);
-                      setShowPassword(false);
-                      setActiveModal('auth');
-                    }}
-                    className="text-sm font-medium text-black underline"
-                  >
-                    Already have an account? Sign in
-                  </button>
-                </div>
-                <div className="mt-4 text-xs text-neutral-500">
-                  <div className="mx-auto inline-flex items-center gap-2">
-                    <span>Powered by</span>
-                    <img
-                      src="/images/paystack-2.svg"
-                      alt="Paystack"
-                      className="h-4"
-                    />
-                  </div>
+              <div className="mt-8 space-y-4">
+                <button
+                  type="button"
+                  onClick={openPaymentModal}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white"
+                >
+                  Create payment link
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError(null);
+                    setSuccess(null);
+                    setShowPassword(false);
+                    setActiveModal('auth');
+                  }}
+                  className="text-sm font-medium text-black underline"
+                >
+                  Sign in
+                </button>
+              </div>
+              <div className="mt-8 text-xs text-neutral-500">
+                <div className="mx-auto inline-flex items-center gap-2">
+                  <span>Powered by</span>
+                  <img
+                    src="/images/paystack-2.svg"
+                    alt="Paystack"
+                    className="h-4"
+                  />
                 </div>
               </div>
             </div>

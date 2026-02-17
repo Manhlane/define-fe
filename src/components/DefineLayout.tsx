@@ -214,7 +214,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           </button>
           <button
             type="button"
-            className="text-lg font-semibold text-black dark:text-white"
+            className="text-xl font-semibold text-black dark:text-white"
             onClick={() => router.push('/home')}
             aria-label="Go to home"
           >
@@ -235,7 +235,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       <Dialog as="div" className="lg:hidden" open={sidebarOpen} onClose={setSidebarOpen}>
         <div className="fixed inset-0 z-50 flex">
           <Dialog.Panel className="relative flex w-72 flex-col border-r border-gray-200 bg-white px-6 py-5 dark:border-white/10 dark:bg-gray-900">
-            <div className="flex items-center justify-between text-lg font-semibold text-black dark:text-white">
+            <div className="flex items-center justify-between text-xl font-semibold text-black dark:text-white">
               <span>dfn!.</span>
               <button
                 type="button"
@@ -269,7 +269,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
         )}
       >
         <div className="relative flex grow flex-col border-r border-gray-200 bg-white px-6 pb-4 dark:border-white/10 dark:bg-gray-900">
-          <div className="relative flex h-16 items-center justify-between text-xl font-semibold text-black dark:text-white">
+          <div className="relative flex h-16 items-center justify-between text-2xl font-semibold text-black dark:text-white">
             {!sidebarCollapsed && <span>define!.</span>}
             <button
               type="button"
