@@ -113,7 +113,6 @@ function ProfilePageContent() {
   const verificationStatus = watch('verificationStatus');
   const emailValue = watch('email');
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);

@@ -14,7 +14,7 @@ export default function PrivacyPolicyV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">1. Introduction</h2>
             <p>
-              define! ("we", "us", "our") respects your privacy and is committed
+              define! (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) respects your privacy and is committed
               to protecting your personal information.
             </p>
             <p>

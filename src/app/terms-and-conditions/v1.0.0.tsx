@@ -14,7 +14,7 @@ export default function TermsV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">1. Introduction</h2>
             <p>
-              Welcome to define! ("we", "us", "our"). By creating an account
+              Welcome to define! (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;). By creating an account
               or using define!, you agree to these Terms of Service. If you do
               not agree, you may not use the platform.
             </p>
