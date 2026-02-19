@@ -35,8 +35,8 @@ export default function LoginPage() {
             <div className="mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-center">
               <button
                 type="button"
-                onClick={() => router.push('/create')}
-                className="flex h-12 items-center justify-center gap-2 rounded-full bg-black px-8 text-sm font-medium text-white transition duration-200 hover:-translate-y-0.5 hover:bg-neutral-900 active:translate-y-0 active:scale-[0.99]"
+                onClick={() => router.push('/create-payment-link')}
+                className="flex h-[52px] items-center justify-center gap-2 rounded-xl bg-black px-8 text-sm font-medium text-white transition active:scale-[0.99]"
               >
                 Create payment link
                 <ArrowRight className="h-4 w-4" />
@@ -44,7 +44,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => router.push('/auth?mode=login')}
-                className="flex h-12 items-center justify-center rounded-full border border-neutral-400 px-8 text-sm font-medium text-black transition duration-200 hover:-translate-y-0.5 hover:bg-neutral-50 active:translate-y-0 active:scale-[0.99]"
+                className="flex h-[52px] items-center justify-center rounded-xl border border-neutral-300 px-8 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
               >
                 Sign in
               </button>

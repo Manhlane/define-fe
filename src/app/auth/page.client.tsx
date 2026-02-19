@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Eye, EyeOff, User, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -18,9 +19,6 @@ const registerSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  acceptTerms: z.boolean().refine((value) => value, {
-    message: 'Accept the terms to continue',
-  }),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -51,6 +49,10 @@ export default function MobileAuthPageClient() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -58,10 +60,7 @@ export default function MobileAuthPageClient() {
 
   const registerForm = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { acceptTerms: false },
   });
-
-  const registerErrors = registerForm.formState.errors;
 
   useEffect(() => {
     const nextMode = searchParams?.get('mode');
@@ -141,17 +140,34 @@ export default function MobileAuthPageClient() {
     window.location.href = GOOGLE_AUTH_URL;
   }
 
+  function openResetModal() {
+    setResetEmail('');
+    setResetError(null);
+    setResetSent(false);
+    setResetOpen(true);
+  }
+
+  function closeResetModal() {
+    setResetOpen(false);
+  }
+
+  function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const emailValue = resetEmail.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+
+    if (!emailOk) {
+      setResetError('Enter a valid email address.');
+      return;
+    }
+
+    setResetError(null);
+    setResetSent(true);
+  }
+
   return (
     <div className="min-h-[100dvh] bg-white text-black">
-      <div className="flex items-center justify-between px-6 pt-12">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm text-neutral-600"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+      <div className="flex items-center px-6 pt-12">
         <div className="text-lg font-semibold tracking-tight">dfn!.</div>
       </div>
 
@@ -159,11 +175,11 @@ export default function MobileAuthPageClient() {
         <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold leading-tight tracking-tight">
-              {mode === 'login' ? 'Sign in' : 'Create account'}
+              {mode === 'login' ? 'Sign in' : 'Sign Up'}
             </h1>
             <p className="text-sm text-neutral-500">
               {mode === 'login'
-                ? 'Access your dashboard.'
+                ? 'Access your secured payments.'
                 : 'Start collecting payments securely.'}
             </p>
           </div>
@@ -200,68 +216,64 @@ export default function MobileAuthPageClient() {
                   />
                 </div>
 
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                  <input
-                    {...(mode === 'login'
-                      ? loginForm.register('password')
-                      : registerForm.register('password'))}
-                    type={
-                      mode === 'login'
-                        ? showPassword ? 'text' : 'password'
-                        : showRegisterPassword ? 'text' : 'password'
-                    }
-                    placeholder="Password"
-                    className="h-[52px] w-full rounded-xl border border-neutral-300 pl-11 pr-12 text-base focus:border-black focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      mode === 'login'
-                        ? setShowPassword(!showPassword)
-                        : setShowRegisterPassword(!showRegisterPassword)
-                    }
-                    className="absolute right-4 top-1/2 -translate-y-1/2"
-                  >
-                    {(mode === 'login' ? showPassword : showRegisterPassword) ? (
-                      <EyeOff className="h-4 w-4 text-neutral-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-neutral-400" />
-                    )}
-                  </button>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      {...(mode === 'login'
+                        ? loginForm.register('password')
+                        : registerForm.register('password'))}
+                      type={
+                        mode === 'login'
+                          ? showPassword ? 'text' : 'password'
+                          : showRegisterPassword ? 'text' : 'password'
+                      }
+                      placeholder="Password"
+                      className="h-[52px] w-full rounded-xl border border-neutral-300 pl-11 pr-12 text-base focus:border-black focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        mode === 'login'
+                          ? setShowPassword(!showPassword)
+                          : setShowRegisterPassword(!showRegisterPassword)
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2"
+                    >
+                      {(mode === 'login' ? showPassword : showRegisterPassword) ? (
+                        <EyeOff className="h-4 w-4 text-neutral-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-neutral-400" />
+                      )}
+                    </button>
+                  </div>
+
+                  {mode === 'login' && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={openResetModal}
+                        className="text-xs font-medium text-black underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {mode === 'login' && (
-                <div className="text-right">
-                  <Link href="/forgot-password" className="text-xs text-neutral-500">
-                    Forgot password?
-                  </Link>
-                </div>
-              )}
-
               {mode === 'register' && (
-                <div className="space-y-2">
-                  <label className="flex items-start gap-3 text-xs text-neutral-600">
-                    <input
-                      type="checkbox"
-                      {...registerForm.register('acceptTerms')}
-                      className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-black focus:ring-black"
-                    />
-                    <span>
-                      I agree to the{' '}
-                      <Link href="/terms" className="font-medium text-black underline">
-                        Terms and Conditions
-                      </Link>
-                      .
-                    </span>
-                  </label>
-                  {registerErrors.acceptTerms && (
-                    <p className="text-xs text-red-600">
-                      {registerErrors.acceptTerms.message}
-                    </p>
-                  )}
-                </div>
+                <p className="text-xs text-neutral-500">
+                  By signing up, you agree to the{' '}
+                  <Link href="/terms-and-conditions" className="font-medium text-black underline">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy-policy" className="font-medium text-black underline">
+                    Privacy Policy
+                  </Link>
+                  .
+                </p>
               )}
 
               {error && <p className="text-sm text-red-600">{error}</p>}
@@ -274,7 +286,7 @@ export default function MobileAuthPageClient() {
                   ? 'Please wait...'
                   : mode === 'login'
                     ? 'Sign in'
-                    : 'Create account'}
+                    : 'Sign Up'}
               </button>
 
               <div className="flex items-center gap-3">
@@ -287,11 +299,11 @@ export default function MobileAuthPageClient() {
                 type="button"
                 onClick={handleGoogleLogin}
                 disabled={googleLoading}
-                className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm transition hover:bg-neutral-50 disabled:opacity-70"
+                className="h-[52px] w-full rounded-xl border border-neutral-400 text-sm transition hover:bg-neutral-50 disabled:opacity-70"
               >
                 <span className="flex items-center justify-center gap-2">
                   <FcGoogle size={18} />
-                  {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                  {googleLoading ? 'Redirecting…' : 'Google'}
                 </span>
               </button>
             </div>
@@ -300,48 +312,75 @@ export default function MobileAuthPageClient() {
               <p className="text-sm text-neutral-600">
                 {mode === 'login' ? (
                   <>
-                    Don’t have an account?{' '}
                     <button
                       type="button"
                       onClick={() => setMode('register')}
-                      className="font-medium text-black"
+                      className="font-medium text-black underline"
                     >
-                      Create one
+                      New to define!? Create your free account
                     </button>
                   </>
                 ) : (
                   <>
-                    Already have an account?{' '}
                     <button
                       type="button"
                       onClick={() => setMode('login')}
-                      className="font-medium text-black"
+                      className="font-medium text-black underline"
                     >
-                      Sign in
+                      Already have an account? Sign in
                     </button>
                   </>
                 )}
               </p>
 
-              {mode === 'register' && (
-                <p className="text-xs text-neutral-400">
-                  <Link href="/terms" className="underline">
-                    Terms
-                  </Link>{' '}
-                  ·{' '}
-                  <Link href="/privacy" className="underline">
-                    Privacy
-                  </Link>{' '}
-                  ·{' '}
-                  <Link href="/cookies" className="underline">
-                    Cookies
-                  </Link>
-                </p>
-              )}
             </div>
           </form>
         </div>
       </main>
+
+      <Dialog open={resetOpen} onClose={closeResetModal} className="fixed inset-0 z-50">
+        <DialogBackdrop className="fixed inset-0 bg-black/40" />
+        <DialogPanel className="fixed left-1/2 top-1/2 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold">Reset password</h2>
+            <p className="text-sm text-neutral-600">
+              Enter your email address and we&apos;ll send you a reset link.
+            </p>
+          </div>
+
+          <form onSubmit={handleResetSubmit} className="mt-5 space-y-4">
+            <input
+              type="email"
+              placeholder="Email"
+              aria-label="Email"
+              value={resetEmail}
+              onChange={(event) => setResetEmail(event.target.value)}
+              className="h-[52px] w-full rounded-xl border border-neutral-300 px-4 text-base focus:border-black focus:outline-none"
+            />
+
+            {resetError && <p className="text-xs text-red-600">{resetError}</p>}
+            {resetSent && (
+              <p className="text-xs text-emerald-600">
+                If this email exists, we&apos;ll send a reset link shortly.
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99]"
+            >
+              Send reset link
+            </button>
+            <button
+              type="button"
+              onClick={closeResetModal}
+              className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50"
+            >
+              Cancel
+            </button>
+          </form>
+        </DialogPanel>
+      </Dialog>
     </div>
   );
 }

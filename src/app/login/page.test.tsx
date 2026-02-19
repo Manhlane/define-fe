@@ -19,7 +19,7 @@ describe('LoginPage', () => {
     const openButton = screen.getByRole('button', { name: /create payment link/i });
     await user.click(openButton);
 
-    expect(pushMock).toHaveBeenCalledWith('/create');
+    expect(pushMock).toHaveBeenCalledWith('/create-payment-link');
   });
 
   it('navigates to the auth page from the sign in button', async () => {

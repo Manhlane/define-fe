@@ -57,7 +57,7 @@ export default function Home() {
   }, []);
 
   function openPaymentModal() {
-    router.push('/create');
+    router.push('/create-payment-link');
   }
 
   function closeActiveModal() {
