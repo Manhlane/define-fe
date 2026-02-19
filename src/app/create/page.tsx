@@ -1,18 +1,18 @@
-﻿'use client';
+'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import DefineLayout from '../../components/DefineLayout';
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { FcGoogle } from 'react-icons/fc';
 
-export default function Home() {
+const AUTH_BASE_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth';
+const GOOGLE_AUTH_URL = `${AUTH_BASE_URL}/google`;
+
+type CreateView = 'form' | 'preview' | 'auth-gate';
+
+export default function CreatePaymentPage() {
   const router = useRouter();
-  const [activeModal, setActiveModal] = useState<
-    'none' | 'payment' | 'payment-preview' | 'auth-gate'
-  >('none');
+  const [view, setView] = useState<CreateView>('form');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const [paymentDraft, setPaymentDraft] = useState({
@@ -27,17 +27,6 @@ export default function Home() {
     email: false,
     description: false,
   });
-
-  useEffect(() => {
-    if (!isGeneratingLink) {
-      return;
-    }
-    const id = setTimeout(() => {
-      setActiveModal(hasSession ? 'none' : 'auth-gate');
-      setIsGeneratingLink(false);
-    }, 3500);
-    return () => clearTimeout(id);
-  }, [hasSession, isGeneratingLink]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -56,14 +45,18 @@ export default function Home() {
     }
   }, []);
 
-  function openPaymentModal() {
-    router.push('/create');
-  }
-
-  function closeActiveModal() {
-    setPaymentErrors({ amount: false, email: false, description: false });
-    setActiveModal('none');
-  }
+  useEffect(() => {
+    if (!isGeneratingLink) {
+      return;
+    }
+    const id = setTimeout(() => {
+      setIsGeneratingLink(false);
+      if (!hasSession) {
+        setView('auth-gate');
+      }
+    }, 3500);
+    return () => clearTimeout(id);
+  }, [hasSession, isGeneratingLink]);
 
   function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,70 +78,47 @@ export default function Home() {
     if (nextErrors.amount || nextErrors.email || nextErrors.description) {
       return;
     }
-    setActiveModal('payment-preview');
+
+    setView('preview');
+  }
+
+  function handleContinue() {
+    if (hasSession) {
+      return;
+    }
+    setIsGeneratingLink(true);
+  }
+
+  function handleGoogleLogin() {
+    window.location.href = GOOGLE_AUTH_URL;
   }
 
   return (
     <DefineLayout>
-      <main className="relative min-h-screen overflow-hidden bg-white text-black">
-        <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16 text-center sm:px-10">
-          <div className="space-y-3">
-            <p className="text-2xl font-semibold leading-tight tracking-tight text-black sm:text-4xl lg:text-5xl">
-              Create protected payment link
-            </p>
-            <p className="text-sm text-black/70 sm:text-base">
-              Secure escrow payments, release funds when delivery is confirmed, and keep every project protected from delays.
-            </p>
-          </div>
-
-          <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
-            <button
-              type="button"
-              onClick={openPaymentModal}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-neutral-900 sm:w-auto"
-            >
-              Generate payment link
-              <ArrowRightIcon className="h-4 w-4" />
-            </button>
-            <Link
-              href="/transactions"
-              className="inline-flex w-full items-center justify-center rounded-full border border-black px-5 py-3 text-sm font-medium text-black transition hover:bg-neutral-100 sm:w-auto"
-            >
-              View transactions/links
-            </Link>
-          </div>
-        </div>
-      </main>
-
-      <Dialog
-        open={activeModal !== 'none'}
-        onClose={closeActiveModal}
-        className="fixed inset-0 z-50"
-      >
-        <DialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
-        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto md:max-h-none md:overflow-visible md:max-w-lg">
-          {activeModal === 'payment' && (
+      <div className="relative min-h-[100dvh] overflow-hidden bg-white text-black">
+      <main className="relative z-10 mx-auto flex min-h-[100dvh] max-w-2xl flex-col items-center justify-center px-6 py-12">
+        <div className="w-full rounded-2xl bg-white/90 p-6 shadow-2xl ring-1 ring-neutral-200 backdrop-blur-md sm:p-8">
+          {view === 'form' && (
             <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Generate payment link</h3>
-                <button
-                  type="button"
-                  onClick={closeActiveModal}
-                  className="text-sm text-neutral-500"
-                >
-                  Close
-                </button>
+              <div>
+                <h1 className="text-3xl font-normal text-black">Get Paid Before the Shoot.</h1>
+                <p className="mt-2 text-sm text-black/70">
+                  Secure your booking with a protected payment link.
+                </p>
               </div>
 
-              <form className="mt-5 space-y-4" onSubmit={handlePaymentSubmit}>
+              <form className="mt-8 space-y-4" onSubmit={handlePaymentSubmit}>
                 <div>
-                  <label className="mb-1 block text-sm">Amount (ZAR)</label>
+                  <label htmlFor="payment-amount" className="mb-1 block text-sm">
+                    Amount
+                  </label>
                   <input
+                    id="payment-amount"
                     type="number"
                     inputMode="decimal"
                     min="0"
                     step="0.01"
-                    placeholder="2500"
+                    placeholder="e.g. 4500"
                     value={paymentDraft.amount}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -156,19 +126,20 @@ export default function Home() {
                         amount: event.target.value,
                       }))
                     }
-                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
-                      paymentErrors.amount
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-300 focus:border-black'
+                    className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                      paymentErrors.amount ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-900 focus:border-black focus:ring-black'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Client email (optional)</label>
+                  <label htmlFor="payment-email" className="mb-1 block text-sm">
+                    Client Email
+                  </label>
                   <input
+                    id="payment-email"
                     type="email"
-                    placeholder="client@email.com"
+                    placeholder="Add email to notify your client"
                     value={paymentDraft.email}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -176,19 +147,20 @@ export default function Home() {
                         email: event.target.value,
                       }))
                     }
-                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
-                      paymentErrors.email
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-300 focus:border-black'
+                    className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                      paymentErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-900 focus:border-black focus:ring-black'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Description</label>
+                  <label htmlFor="payment-description" className="mb-1 block text-sm">
+                    Description
+                  </label>
                   <textarea
+                    id="payment-description"
                     rows={4}
-                    placeholder="Wedding photography – 10 edited photos"
+                    placeholder="e.g. Wedding shoot – 50% deposit"
                     value={paymentDraft.description}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -196,18 +168,17 @@ export default function Home() {
                         description: event.target.value,
                       }))
                     }
-                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none ${
-                      paymentErrors.description
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-300 focus:border-black'
+                    className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                      paymentErrors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-900 focus:border-black focus:ring-black'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Expected delivery date (optional)</label>
+                  <label className="mb-1 block text-sm">Delivery Date</label>
                   <input
                     type="date"
+                    placeholder="Select delivery date (optional)"
                     value={paymentDraft.deliveryDate}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -215,12 +186,12 @@ export default function Home() {
                         deliveryDate: event.target.value,
                       }))
                     }
-                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Auto-release after</label>
+                  <label className="mb-1 block text-sm">Auto Release</label>
                   <select
                     value={paymentDraft.autoRelease}
                     onChange={(event) =>
@@ -229,7 +200,7 @@ export default function Home() {
                         autoRelease: event.target.value,
                       }))
                     }
-                    className="h-11 w-full appearance-none rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className="mt-1 block w-full appearance-none rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   >
                     <option>3 days (recommended)</option>
                     <option>7 days</option>
@@ -239,7 +210,7 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
+                  className="flex w-full items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
                 >
                   Generate Payment Link
                 </button>
@@ -256,17 +227,10 @@ export default function Home() {
             </>
           )}
 
-          {activeModal === 'payment-preview' && (
+          {view === 'preview' && (
             <>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Payment preview</h3>
-                <button
-                  type="button"
-                  onClick={closeActiveModal}
-                  className="text-sm text-neutral-500"
-                >
-                  Close
-                </button>
+                <h2 className="text-lg font-semibold">Payment preview</h2>
               </div>
 
               <div className="mt-5 space-y-3 text-sm text-neutral-700">
@@ -277,9 +241,9 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Client Email</p>
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Client email</p>
                   <p className="text-right text-base text-black">
-                    {paymentDraft.email || 'Not provided'}
+                    {paymentDraft.email || '—'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
@@ -289,15 +253,15 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Expected Delivery Date</p>
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Expected delivery date</p>
                   <p className="text-right text-base text-black">
-                    {paymentDraft.deliveryDate || 'Not set'}
+                    {paymentDraft.deliveryDate || '—'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Auto-Release After</p>
+                  <p className="text-sm font-normal tracking-wide text-neutral-500">Auto-release after</p>
                   <p className="text-right text-base text-black">
-                    {paymentDraft.autoRelease || 'Not set'}
+                    {paymentDraft.autoRelease || '—'}
                   </p>
                 </div>
               </div>
@@ -305,22 +269,18 @@ export default function Home() {
               <div className="mt-6 space-y-3">
                 <button
                   type="button"
-                  onClick={() => setIsGeneratingLink(true)}
+                  onClick={handleContinue}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
                   disabled={isGeneratingLink}
-                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
                 >
-                  {isGeneratingLink ? (
-                    <>
-                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      Generating Payment Link
-                    </>
-                  ) : (
-                    'Continue'
+                  {isGeneratingLink && (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                   )}
+                  {isGeneratingLink ? 'Generating Payment Link' : 'Continue'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveModal('payment')}
+                  onClick={() => setView('form')}
                   className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black hover:bg-neutral-50"
                 >
                   Edit payment details
@@ -329,19 +289,12 @@ export default function Home() {
             </>
           )}
 
-          {activeModal === 'auth-gate' && (
+          {view === 'auth-gate' && (
             <>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
+                <h2 className="text-lg font-semibold">
                   Create an account to send this payment request.
-                </h3>
-                <button
-                  type="button"
-                  onClick={closeActiveModal}
-                  className="text-sm text-neutral-500"
-                >
-                  Close
-                </button>
+                </h2>
               </div>
               <p className="mt-3 text-sm text-neutral-600">
                 Your payment link is ready — this just helps us protect payments.
@@ -351,30 +304,34 @@ export default function Home() {
               </p>
 
               <div className="mt-5 space-y-3">
-                <Link
-                  href="/login"
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
                 >
                   <FcGoogle />
                   Continue with Google
-                </Link>
-                <Link
-                  href="/login"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/login?mode=register')}
                   className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black hover:bg-neutral-50"
                 >
                   Create account with email
-                </Link>
-                <Link
-                  href="/login"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/login?mode=login')}
                   className="text-sm font-normal text-neutral-500 underline"
                 >
                   Already have an account? Sign in
-                </Link>
+                </button>
               </div>
             </>
           )}
-        </DialogPanel>
-      </Dialog>
+        </div>
+      </main>
+    </div>
     </DefineLayout>
   );
 }
