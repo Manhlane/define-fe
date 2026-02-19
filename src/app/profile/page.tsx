@@ -140,10 +140,6 @@ function ProfilePageContent() {
         if (isActive) {
           setFeedback({ type: 'error', message: 'Failed to load profile. Please refresh.' });
         }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
       }
     }
 
