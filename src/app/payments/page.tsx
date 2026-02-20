@@ -427,27 +427,26 @@ function PaymentsPageContent() {
 
             <form className="mt-6 space-y-4" onSubmit={handleRequestSubmit}>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Client name</label>
                 <input
                   type="text"
                   placeholder="e.g. Thandi Khumalo"
+                  aria-label="Client name"
                   value={requestForm.name}
                   onChange={(event) => setRequestForm((prev) => ({ ...prev, name: event.target.value }))}
                   className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Client email</label>
                 <input
                   type="email"
                   placeholder="client@email.com"
+                  aria-label="Client email"
                   value={requestForm.email}
                   onChange={(event) => setRequestForm((prev) => ({ ...prev, email: event.target.value }))}
                   className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Amount</label>
                 <div className="mt-1 flex rounded-lg border border-black">
                   <span className="inline-flex items-center rounded-l-lg border-r border-black bg-gray-100 px-3 text-sm text-gray-600">R</span>
                   <input
@@ -455,6 +454,7 @@ function PaymentsPageContent() {
                     min="0"
                     step="0.01"
                     placeholder="0.00"
+                    aria-label="Amount"
                     value={requestForm.amount}
                     onChange={(event) => setRequestForm((prev) => ({ ...prev, amount: event.target.value }))}
                     className="w-full rounded-r-lg px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
@@ -462,19 +462,19 @@ function PaymentsPageContent() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Payment due date</label>
                 <input
                   type="date"
+                  aria-label="Payment due date"
                   value={requestForm.dueDate}
                   onChange={(event) => setRequestForm((prev) => ({ ...prev, dueDate: event.target.value }))}
                   className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Notes</label>
                 <textarea
                   rows={3}
                   placeholder="Add context for your client (optional)"
+                  aria-label="Notes"
                   value={requestForm.description}
                   onChange={(event) => setRequestForm((prev) => ({ ...prev, description: event.target.value }))}
                   className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
@@ -510,7 +510,6 @@ function PaymentsPageContent() {
 
             <form className="mt-6 space-y-4">
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Amount</label>
                 <div className="mt-1 flex rounded-lg border border-black">
                   <span className="inline-flex items-center rounded-l-lg border-r border-black bg-gray-100 px-3 text-sm text-gray-600">R</span>
                   <input
@@ -518,23 +517,26 @@ function PaymentsPageContent() {
                     min="0"
                     step="0.01"
                     placeholder="0.00"
+                    aria-label="Amount"
                     className="w-full rounded-r-lg px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Destination account</label>
-                <select className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black">
+                <select
+                  aria-label="Destination account"
+                  className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                >
                   <option>FNB •••• 7890 (Primary)</option>
                   <option>Standard Bank •••• 1123</option>
                   <option>Add new account…</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">Reference (optional)</label>
                 <input
                   type="text"
                   placeholder="e.g. October payout"
+                  aria-label="Reference (optional)"
                   className="mt-1 block w-full rounded-lg border border-black px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                 />
               </div>

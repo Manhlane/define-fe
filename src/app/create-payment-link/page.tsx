@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 type PaymentDraft = {
   amount: string;
@@ -36,6 +37,30 @@ export default function CreatePaymentLinkPage() {
     email: false,
     description: false,
   });
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string }>>([]);
+
+  function addToast(message: string) {
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setToasts((prev) => {
+      if (prev.some((toast) => toast.message === message)) {
+        return prev;
+      }
+      setTimeout(() => {
+        setToasts((current) => current.filter((toast) => toast.id !== id));
+      }, 5000);
+      return [...prev, { id, message }];
+    });
+  }
+
+  function addToasts(messages: string[]) {
+    messages.forEach((message) => {
+      addToast(message);
+    });
+  }
+
+  function removeToast(id: string) {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }
 
   function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,13 +87,16 @@ export default function CreatePaymentLinkPage() {
     setContactErrors(nextContactErrors);
     setPaymentErrors(nextErrors);
 
-    if (
-      nextContactErrors.name ||
-      nextContactErrors.surname ||
-      nextErrors.amount ||
-      nextErrors.email ||
-      nextErrors.description
-    ) {
+    const messages = [
+      nextContactErrors.name ? 'Client name is required.' : null,
+      nextContactErrors.surname ? 'Client surname is required.' : null,
+      nextErrors.amount ? 'Amount must be greater than 100.' : null,
+      nextErrors.email ? 'Enter a valid client email address.' : null,
+      nextErrors.description ? 'Description is required.' : null,
+    ].filter(Boolean) as string[];
+
+    if (messages.length > 0) {
+      addToasts(messages);
       return;
     }
 
@@ -83,6 +111,30 @@ export default function CreatePaymentLinkPage() {
 
       <main className="flex min-h-[calc(100dvh-64px)] flex-col px-6 pt-4 pb-10">
         <div className="mx-auto flex w-full max-w-md flex-col gap-6">
+          {toasts.length > 0 && (
+            <div className="fixed right-4 top-4 z-[60] flex w-[92%] max-w-sm flex-col gap-3">
+              {toasts.map((toast) => (
+                <div key={toast.id} className="rounded-md bg-red-50 p-4">
+                  <div className="flex items-start">
+                    <div className="shrink-0">
+                      <XCircleIcon aria-hidden="true" className="size-5 text-red-400" />
+                    </div>
+                    <div className="ml-3 flex-1 text-sm text-red-700">
+                      {toast.message}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeToast(toast.id)}
+                      className="ml-4 text-red-600 hover:text-red-700"
+                      aria-label="Dismiss"
+                    >
+                      <XMarkIcon aria-hidden="true" className="size-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold leading-tight tracking-tight">
               Get Paid Before the Shoot.
@@ -95,112 +147,128 @@ export default function CreatePaymentLinkPage() {
           <form onSubmit={handlePaymentSubmit} className="flex flex-col gap-6">
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <input
-                  type="text"
-                  placeholder="Client name"
-                  aria-label="Name"
-                  value={contactDraft.name}
-                  onChange={(event) =>
-                    setContactDraft((draft) => ({
-                      ...draft,
-                      name: event.target.value,
-                    }))
-                  }
-                  className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
-                    contactErrors.name
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
-                <input
-                  type="text"
-                  placeholder="Client surname"
-                  aria-label="Surname"
-                  value={contactDraft.surname}
-                  onChange={(event) =>
-                    setContactDraft((draft) => ({
-                      ...draft,
-                      surname: event.target.value,
-                    }))
-                  }
-                  className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
-                    contactErrors.surname
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
+                <div>
+                  <div className="relative">
+                    <input
+                      id="client-name"
+                      type="text"
+                      placeholder="Client name"
+                      aria-label="Client name"
+                      value={contactDraft.name}
+                      onChange={(event) =>
+                        setContactDraft((draft) => ({
+                          ...draft,
+                          name: event.target.value,
+                        }))
+                      }
+                      className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                        contactErrors.name
+                          ? 'border-red-300 focus:border-red-600'
+                          : 'border-neutral-300 focus:border-black'
+                      }`}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="relative">
+                    <input
+                      id="client-surname"
+                      type="text"
+                      placeholder="Client surname"
+                      aria-label="Client surname"
+                      value={contactDraft.surname}
+                      onChange={(event) =>
+                        setContactDraft((draft) => ({
+                          ...draft,
+                          surname: event.target.value,
+                        }))
+                      }
+                      className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                        contactErrors.surname
+                          ? 'border-red-300 focus:border-red-600'
+                          : 'border-neutral-300 focus:border-black'
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
-                <input
-                  id="payment-amount"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  placeholder="Amount (e.g. 4500)"
-                  aria-label="Amount"
-                  value={paymentDraft.amount}
-                  onChange={(event) =>
-                    setPaymentDraft((draft) => ({
-                      ...draft,
-                      amount: event.target.value,
-                    }))
-                  }
-                  className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
-                    paymentErrors.amount
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
+                <div className="relative">
+                  <input
+                    id="payment-amount"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="Amount (e.g. 4500)"
+                    aria-label="Amount"
+                    value={paymentDraft.amount}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        amount: event.target.value,
+                      }))
+                    }
+                    className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                      paymentErrors.amount
+                        ? 'border-red-300 focus:border-red-600'
+                        : 'border-neutral-300 focus:border-black'
+                    }`}
+                  />
+                </div>
               </div>
 
               <div>
-                <input
-                  id="payment-email"
-                  type="email"
-                  placeholder="Client email (optional)"
-                  aria-label="Client email"
-                  value={paymentDraft.email}
-                  onChange={(event) =>
-                    setPaymentDraft((draft) => ({
-                      ...draft,
-                      email: event.target.value,
-                    }))
-                  }
-                  className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
-                    paymentErrors.email
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
+                <div className="relative">
+                  <input
+                    id="payment-email"
+                    type="email"
+                    placeholder="Client email (optional)"
+                    aria-label="Client email"
+                    value={paymentDraft.email}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        email: event.target.value,
+                      }))
+                    }
+                    className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                      paymentErrors.email
+                        ? 'border-red-300 focus:border-red-600'
+                        : 'border-neutral-300 focus:border-black'
+                    }`}
+                  />
+                </div>
               </div>
 
               <div>
-                <textarea
-                  id="payment-description"
-                  rows={4}
-                  placeholder="Description (e.g. Wedding shoot – 50% deposit)"
-                  aria-label="Description"
-                  value={paymentDraft.description}
-                  onChange={(event) =>
-                    setPaymentDraft((draft) => ({
-                      ...draft,
-                      description: event.target.value,
-                    }))
-                  }
-                  className={`w-full rounded-xl border px-4 py-3 text-base focus:outline-none ${
-                    paymentErrors.description
-                      ? 'border-red-500 focus:border-red-500'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
+                <div className="relative">
+                  <textarea
+                    id="payment-description"
+                    rows={4}
+                    placeholder="Description (e.g. Wedding shoot – 50% deposit)"
+                    aria-label="Description"
+                    value={paymentDraft.description}
+                    onChange={(event) =>
+                      setPaymentDraft((draft) => ({
+                        ...draft,
+                        description: event.target.value,
+                      }))
+                    }
+                    className={`w-full rounded-xl border px-4 py-3 text-base focus:outline-none ${
+                      paymentErrors.description
+                        ? 'border-red-300 focus:border-red-600'
+                        : 'border-neutral-300 focus:border-black'
+                    }`}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs text-neutral-500">Delivery date (optional)</p>
+              <div>
                 <input
                   type="date"
+                  aria-label="Delivery date (optional)"
                   value={paymentDraft.deliveryDate}
                   onChange={(event) =>
                     setPaymentDraft((draft) => ({
@@ -212,9 +280,9 @@ export default function CreatePaymentLinkPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs text-neutral-500">Auto-release after</p>
+              <div>
                 <select
+                  aria-label="Auto-release after"
                   value={paymentDraft.autoRelease}
                   onChange={(event) =>
                     setPaymentDraft((draft) => ({

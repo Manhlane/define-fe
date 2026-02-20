@@ -201,7 +201,6 @@ useEffect(() => {
           <form onSubmit={handleSubmit(onSubmit, onError)} noValidate className="space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-sm mb-1">Name</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <User size={20} />
@@ -209,6 +208,8 @@ useEffect(() => {
                 <input
                   {...register('name')}
                   type="text"
+                  placeholder="Name"
+                  aria-label="Name"
                   className={`${baseInput} ${errors.name ? errInput : okInput}`}
                 />
               </div>
@@ -216,7 +217,6 @@ useEffect(() => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm mb-1">Email</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <Mail size={20} />
@@ -224,6 +224,8 @@ useEffect(() => {
                 <input
                   {...register('email')}
                   type="text" // no native validation
+                  placeholder="Email"
+                  aria-label="Email"
                   className={`${baseInput} ${errors.email ? errInput : okInput}`}
                 />
               </div>
@@ -231,7 +233,6 @@ useEffect(() => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm mb-1">Password</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <Lock size={20} />
@@ -239,6 +240,8 @@ useEffect(() => {
                 <input
                   {...register('password')}
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  aria-label="Password"
                   className={`${baseInput} ${errors.password ? errInput : okInput}`}
                 />
                 <button
@@ -253,7 +256,6 @@ useEffect(() => {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm mb-1">Confirm Password</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <Lock size={20} />
@@ -261,6 +263,8 @@ useEffect(() => {
                 <input
                   {...register('confirmPassword')}
                   type={showConfirm ? 'text' : 'password'}
+                  placeholder="Confirm password"
+                  aria-label="Confirm password"
                   className={`${baseInput} ${errors.confirmPassword ? errInput : okInput}`}
                 />
                 <button

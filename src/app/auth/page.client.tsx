@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -48,11 +48,7 @@ export default function MobileAuthPageClient() {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [resetOpen, setResetOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetError, setResetError] = useState<string | null>(null);
-  const [resetSent, setResetSent] = useState(false);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string }>>([]);
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +58,9 @@ export default function MobileAuthPageClient() {
     resolver: zodResolver(registerSchema),
   });
 
+  const loginErrors = loginForm.formState.errors;
+  const registerErrors = registerForm.formState.errors;
+
   useEffect(() => {
     const nextMode = searchParams?.get('mode');
     if (nextMode === 'register') setMode('register');
@@ -70,7 +69,6 @@ export default function MobileAuthPageClient() {
 
   async function handleLogin(values: LoginValues) {
     setLoading(true);
-    setError(null);
 
     try {
       const res = await fetch(LOGIN_URL, {
@@ -82,7 +80,7 @@ export default function MobileAuthPageClient() {
       const body = (await res.json().catch(() => null)) as LoginResponse | null;
 
       if (!res.ok || !body?.accessToken) {
-        setError(body?.message || 'Invalid email or password');
+        addToast(body?.message || 'Invalid email or password');
         return;
       }
 
@@ -98,7 +96,7 @@ export default function MobileAuthPageClient() {
       );
       router.push('/home');
     } catch {
-      setError('Network error. Please try again.');
+      addToast('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -106,7 +104,6 @@ export default function MobileAuthPageClient() {
 
   async function handleRegister(values: RegisterValues) {
     setLoading(true);
-    setError(null);
 
     try {
       const res = await fetch(REGISTER_URL, {
@@ -120,7 +117,7 @@ export default function MobileAuthPageClient() {
       });
 
       if (!res.ok) {
-        setError('Registration failed. Please try again.');
+        addToast('Registration failed. Please try again.');
         return;
       }
 
@@ -128,45 +125,77 @@ export default function MobileAuthPageClient() {
       loginForm.reset({ email: values.email, password: '' });
       registerForm.reset();
     } catch {
-      setError('Network error. Please try again.');
+      addToast('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   }
 
   function handleGoogleLogin() {
-    setError(null);
     setGoogleLoading(true);
     window.location.href = GOOGLE_AUTH_URL;
   }
 
-  function openResetModal() {
-    setResetEmail('');
-    setResetError(null);
-    setResetSent(false);
-    setResetOpen(true);
+  const formErrors = mode === 'login' ? loginErrors : registerErrors;
+
+  const extractMessages = useMemo(
+    () =>
+      (errors: typeof formErrors) =>
+        Object.values(errors)
+          .map((field) => field?.message)
+          .filter(Boolean) as string[],
+    []
+  );
+
+  function addToast(message: string) {
+    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setToasts((prev) => {
+      if (prev.some((toast) => toast.message === message)) {
+        return prev;
+      }
+      setTimeout(() => {
+        setToasts((current) => current.filter((toast) => toast.id !== id));
+      }, 5000);
+      return [...prev, { id, message }];
+    });
   }
 
-  function closeResetModal() {
-    setResetOpen(false);
+  function addToasts(messages: string[]) {
+    messages.forEach((message) => {
+      addToast(message);
+    });
   }
 
-  function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const emailValue = resetEmail.trim();
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
-
-    if (!emailOk) {
-      setResetError('Enter a valid email address.');
-      return;
-    }
-
-    setResetError(null);
-    setResetSent(true);
+  function removeToast(id: string) {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }
 
   return (
     <div className="min-h-[100dvh] bg-white text-black">
+      {toasts.length > 0 && (
+        <div className="fixed right-4 top-4 z-[60] flex w-[92%] max-w-sm flex-col gap-3">
+          {toasts.map((toast) => (
+            <div key={toast.id} className="rounded-md bg-red-50 p-4">
+              <div className="flex items-start">
+                <div className="shrink-0">
+                  <XCircleIcon aria-hidden="true" className="size-5 text-red-400" />
+                </div>
+                <div className="ml-3 flex-1 text-sm text-red-700">
+                  {toast.message}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeToast(toast.id)}
+                  className="ml-4 text-red-600 hover:text-red-700"
+                  aria-label="Dismiss"
+                >
+                  <XMarkIcon aria-hidden="true" className="size-5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-center px-6 pt-12">
         <div className="text-lg font-semibold tracking-tight">dfn!.</div>
       </div>
@@ -187,78 +216,105 @@ export default function MobileAuthPageClient() {
           <form
             onSubmit={
               mode === 'login'
-                ? loginForm.handleSubmit(handleLogin)
-                : registerForm.handleSubmit(handleRegister)
+                ? loginForm.handleSubmit(handleLogin, (errors) => addToasts(extractMessages(errors)))
+                : registerForm.handleSubmit(handleRegister, (errors) => addToasts(extractMessages(errors)))
             }
             className="flex flex-col"
           >
             <div className="space-y-6">
               <div className="space-y-4">
                 {mode === 'register' && (
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                    <input
-                      {...registerForm.register('name')}
-                      placeholder="Name"
-                      className="h-[52px] w-full rounded-xl border border-neutral-300 pl-11 pr-4 text-base focus:border-black focus:outline-none"
-                    />
+                  <div>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                      <input
+                        {...registerForm.register('name')}
+                        id="auth-name"
+                        placeholder="Name"
+                        aria-label="Name"
+                        aria-invalid={Boolean(registerErrors.name)}
+                        className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
+                          registerErrors.name
+                            ? 'border-red-300 focus:border-red-600'
+                            : 'border-neutral-300 focus:border-black'
+                        }`}
+                      />
+                    </div>
                   </div>
                 )}
 
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                  <input
-                    {...(mode === 'login'
-                      ? loginForm.register('email')
-                      : registerForm.register('email'))}
-                    placeholder="Email"
-                    className="h-[52px] w-full rounded-xl border border-neutral-300 pl-11 pr-4 text-base focus:border-black focus:outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
+                <div>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                    <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                     <input
                       {...(mode === 'login'
-                        ? loginForm.register('password')
-                        : registerForm.register('password'))}
-                      type={
-                        mode === 'login'
-                          ? showPassword ? 'text' : 'password'
-                          : showRegisterPassword ? 'text' : 'password'
-                      }
-                      placeholder="Password"
-                      className="h-[52px] w-full rounded-xl border border-neutral-300 pl-11 pr-12 text-base focus:border-black focus:outline-none"
+                        ? loginForm.register('email')
+                        : registerForm.register('email'))}
+                      id="auth-email"
+                      placeholder="Email"
+                      aria-label="Email"
+                      aria-invalid={Boolean(formErrors.email)}
+                      className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
+                        formErrors.email
+                          ? 'border-red-300 focus:border-red-600'
+                          : 'border-neutral-300 focus:border-black'
+                      }`}
                     />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        mode === 'login'
-                          ? setShowPassword(!showPassword)
-                          : setShowRegisterPassword(!showRegisterPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2"
-                    >
-                      {(mode === 'login' ? showPassword : showRegisterPassword) ? (
-                        <EyeOff className="h-4 w-4 text-neutral-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-neutral-400" />
-                      )}
-                    </button>
                   </div>
+                </div>
 
-                  {mode === 'login' && (
-                    <div className="text-right">
+                <div>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                      <input
+                        {...(mode === 'login'
+                          ? loginForm.register('password')
+                          : registerForm.register('password'))}
+                        id="auth-password"
+                        type={
+                          mode === 'login'
+                            ? showPassword ? 'text' : 'password'
+                            : showRegisterPassword ? 'text' : 'password'
+                        }
+                        placeholder="Password"
+                        aria-label="Password"
+                        aria-invalid={Boolean(formErrors.password)}
+                        className={`h-[52px] w-full rounded-xl border pl-11 pr-12 text-base focus:outline-none ${
+                          formErrors.password
+                            ? 'border-red-300 focus:border-red-600'
+                            : 'border-neutral-300 focus:border-black'
+                        }`}
+                      />
                       <button
                         type="button"
-                        onClick={openResetModal}
-                        className="text-xs font-medium text-black underline"
+                        onClick={() =>
+                          mode === 'login'
+                            ? setShowPassword(!showPassword)
+                            : setShowRegisterPassword(!showRegisterPassword)
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        Forgot password?
+                        {(mode === 'login' ? showPassword : showRegisterPassword) ? (
+                          <EyeOff className="h-4 w-4 text-neutral-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-neutral-400" />
+                        )}
                       </button>
                     </div>
-                  )}
+
+                    {mode === 'login' && (
+                      <div className="text-right">
+                        <button
+                          type="button"
+                          onClick={() => router.push('/reset-password')}
+                          className="text-xs font-medium text-black underline"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -275,8 +331,6 @@ export default function MobileAuthPageClient() {
                   .
                 </p>
               )}
-
-              {error && <p className="text-sm text-red-600">{error}</p>}
 
               <button
                 disabled={loading}
@@ -338,49 +392,6 @@ export default function MobileAuthPageClient() {
         </div>
       </main>
 
-      <Dialog open={resetOpen} onClose={closeResetModal} className="fixed inset-0 z-50">
-        <DialogBackdrop className="fixed inset-0 bg-black/40" />
-        <DialogPanel className="fixed left-1/2 top-1/2 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold">Reset password</h2>
-            <p className="text-sm text-neutral-600">
-              Enter your email address and we&apos;ll send you a reset link.
-            </p>
-          </div>
-
-          <form onSubmit={handleResetSubmit} className="mt-5 space-y-4">
-            <input
-              type="email"
-              placeholder="Email"
-              aria-label="Email"
-              value={resetEmail}
-              onChange={(event) => setResetEmail(event.target.value)}
-              className="h-[52px] w-full rounded-xl border border-neutral-300 px-4 text-base focus:border-black focus:outline-none"
-            />
-
-            {resetError && <p className="text-xs text-red-600">{resetError}</p>}
-            {resetSent && (
-              <p className="text-xs text-emerald-600">
-                If this email exists, we&apos;ll send a reset link shortly.
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99]"
-            >
-              Send reset link
-            </button>
-            <button
-              type="button"
-              onClick={closeResetModal}
-              className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50"
-            >
-              Cancel
-            </button>
-          </form>
-        </DialogPanel>
-      </Dialog>
     </div>
   );
 }

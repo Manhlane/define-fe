@@ -399,9 +399,6 @@ function ProfilePageContent() {
 
           <div className="max-w-xl space-y-4">
             <hr className="border-black" />
-            <label htmlFor="defineHandle" className="block text-sm font-medium text-gray-900">
-              Profile handle
-            </label>
             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-stretch">
               <div className="flex flex-1 rounded-md shadow-sm">
                 <span className="inline-flex w-full items-center gap-1 rounded-md border border-gray-900 bg-white px-3 text-sm font-medium sm:w-auto sm:rounded-l-md sm:border-r-0">
@@ -419,6 +416,7 @@ function ProfilePageContent() {
                   id="defineHandle"
                   type="text"
                   placeholder="yourname"
+                  aria-label="Profile handle"
                   className="block w-full min-w-0 flex-1 rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:rounded-r-md sm:rounded-l-none sm:border-l-0"
                 />
               </div>
@@ -457,21 +455,17 @@ function ProfilePageContent() {
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                Full name
-              </label>
               <input
                 {...register('fullName', { required: 'Name is required' })}
                 id="fullName"
                 type="text"
+                placeholder="Full name"
+                aria-label="Full name"
                 className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               />
               {errors.fullName && <p className="mt-1 text-xs text-red-600">{errors.fullName.message}</p>}
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
               <input
                 {...register('email', {
                   required: 'Email is required',
@@ -479,18 +473,19 @@ function ProfilePageContent() {
                 })}
                 id="email"
                 type="email"
+                placeholder="you@example.com"
+                aria-label="Email"
                 className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               />
               {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Phone number
-              </label>
               <input
                 {...register('phone')}
                 id="phone"
                 type="tel"
+                placeholder="Phone number"
+                aria-label="Phone number"
                 className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               />
             </div>

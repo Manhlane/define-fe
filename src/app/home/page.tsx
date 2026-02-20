@@ -142,13 +142,13 @@ export default function Home() {
 
               <form className="mt-5 space-y-4" onSubmit={handlePaymentSubmit}>
                 <div>
-                  <label className="mb-1 block text-sm">Amount (ZAR)</label>
                   <input
                     type="number"
                     inputMode="decimal"
                     min="0"
                     step="0.01"
                     placeholder="2500"
+                    aria-label="Amount (ZAR)"
                     value={paymentDraft.amount}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -165,10 +165,10 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Client email (optional)</label>
                   <input
                     type="email"
                     placeholder="client@email.com"
+                    aria-label="Client email (optional)"
                     value={paymentDraft.email}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -185,10 +185,10 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Description</label>
                   <textarea
                     rows={4}
                     placeholder="Wedding photography – 10 edited photos"
+                    aria-label="Description"
                     value={paymentDraft.description}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -205,9 +205,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Expected delivery date (optional)</label>
                   <input
                     type="date"
+                    aria-label="Expected delivery date (optional)"
                     value={paymentDraft.deliveryDate}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -220,8 +220,8 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm">Auto-release after</label>
                   <select
+                    aria-label="Auto-release after"
                     value={paymentDraft.autoRelease}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({

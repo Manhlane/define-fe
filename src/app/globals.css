@@ -35,6 +35,7 @@ input,
 select,
 textarea {
   font-family: inherit;
+  border-radius: 0 !important;
 }
 
 h1,
