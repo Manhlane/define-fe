@@ -121,7 +121,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     setActive('Home');
-    router.push('/login');
+    router.push('/welcome-to-dfn');
     //setIsLoggingOut(false);
   }, [isLoggingOut, router]);
 
@@ -270,7 +270,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       >
         <div className="relative flex grow flex-col border-r border-gray-200 bg-white px-6 pb-4 dark:border-white/10 dark:bg-gray-900">
           <div className="relative flex h-16 items-center justify-between text-2xl font-semibold text-black dark:text-white">
-            {!sidebarCollapsed && <span>define!.</span>}
+            {!sidebarCollapsed && <span>dfn!.</span>}
             <button
               type="button"
               onClick={() => setSidebarCollapsed((prev) => !prev)}

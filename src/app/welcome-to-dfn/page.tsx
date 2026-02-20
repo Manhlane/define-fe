@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import LoginPageClient from './page.client';
+import LandingPageClient from './page.client';
 
-export default function LoginPage() {
+export default function LandingPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <LoginPageClient />
+      <LandingPageClient />
     </Suspense>
   );
 }

@@ -7,7 +7,6 @@ import {
   ArrowPathIcon,
   CheckCircleIcon,
   DocumentDuplicateIcon,
-  ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { NotificationsClient } from '../../lib/notifications';
 
@@ -112,6 +111,9 @@ function ProfilePageContent() {
   const fullName = watch('fullName');
   const verificationStatus = watch('verificationStatus');
   const emailValue = watch('email');
+  const defineHandleError = Boolean(errors.defineHandle);
+  const fullNameError = Boolean(errors.fullName);
+  const emailError = Boolean(errors.email);
 
   const [saving, setSaving] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
@@ -347,7 +349,7 @@ function ProfilePageContent() {
             <button
               type="button"
               onClick={handleAvatarClick}
-              className="w-full rounded-md border border-gray-900 px-3 py-2 text-xs font-medium text-gray-900 transition hover:bg-gray-100 sm:w-auto"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto"
               disabled={avatarLoading}
             >
               Change photo
@@ -355,7 +357,7 @@ function ProfilePageContent() {
             <button
               type="button"
               onClick={handleRemoveAvatar}
-              className="w-full rounded-md border border-gray-900 px-3 py-2 text-xs font-medium text-gray-900 transition hover:bg-gray-100 disabled:opacity-60 sm:w-auto"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:opacity-60 sm:w-auto"
               disabled={avatarLoading || !avatarUrl}
             >
               Remove
@@ -371,19 +373,9 @@ function ProfilePageContent() {
         </div>
       </section>
 
-      {feedback && (
-        <div
-          className={`mt-6 flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
-            feedback.type === 'success'
-              ? 'border-green-200 bg-green-50 text-green-700'
-              : 'border-red-200 bg-red-50 text-red-700'
-          }`}
-        >
-          {feedback.type === 'success' ? (
-            <CheckCircleIcon className="h-5 w-5" />
-          ) : (
-            <ExclamationCircleIcon className="h-5 w-5" />
-          )}
+      {feedback?.type === 'success' && (
+        <div className="mt-6 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <CheckCircleIcon className="h-5 w-5" />
           <span>{feedback.message}</span>
         </div>
       )}
@@ -399,47 +391,58 @@ function ProfilePageContent() {
 
           <div className="max-w-xl space-y-4">
             <hr className="border-black" />
-            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-              <div className="flex flex-1 rounded-md shadow-sm">
-                <span className="inline-flex w-full items-center gap-1 rounded-md border border-gray-900 bg-white px-3 text-sm font-medium sm:w-auto sm:rounded-l-md sm:border-r-0">
-                  <span className="text-gray-600">http://</span>
-                  <span className="text-black">{SHARE_PREFIX_LABEL}</span>
-                </span>
-                <input
-                  {...register('defineHandle', {
-                    required: 'Handle is required',
-                    pattern: {
-                      value: /^[a-z0-9-]{3,30}$/i,
-                      message: 'Use 3-30 letters, numbers, or dashes',
-                    },
-                  })}
-                  id="defineHandle"
-                  type="text"
-                  placeholder="yourname"
-                  aria-label="Profile handle"
-                  className="block w-full min-w-0 flex-1 rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:rounded-r-md sm:rounded-l-none sm:border-l-0"
-                />
-              </div>
-              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-                <button
-                  type="submit"
-                  disabled={saving || !defineHandle}
-                  className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-md border border-gray-900 bg-white px-4 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? 'Saving…' : 'Save changes'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  disabled={!defineHandle}
-                  className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <DocumentDuplicateIcon className="h-4 w-4" />
-                  {copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy link'}
-                </button>
+            <div className="relative mt-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+                  <div className="flex flex-1 rounded-md shadow-sm">
+                    <span
+                      className={`inline-flex w-full items-center gap-1 rounded-md border bg-white px-3 text-sm font-medium sm:w-auto sm:rounded-l-md sm:border-r-0 ${
+                        defineHandleError ? 'border-red-300' : 'border-gray-900'
+                      }`}
+                    >
+                      <span className="text-gray-600">http://</span>
+                      <span className="text-black">{SHARE_PREFIX_LABEL}</span>
+                    </span>
+                    <input
+                      {...register('defineHandle', {
+                        required: 'Handle is required',
+                        pattern: {
+                          value: /^[a-z0-9-]{3,30}$/i,
+                          message: 'Use 3-30 letters, numbers, or dashes',
+                        },
+                      })}
+                      id="defineHandle"
+                      type="text"
+                      placeholder="yourname"
+                      aria-label="Profile handle"
+                      className={`block w-full min-w-0 flex-1 rounded-md border px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 sm:rounded-r-md sm:rounded-l-none sm:border-l-0 ${
+                        defineHandleError
+                          ? 'border-red-300 focus:border-red-600 focus:ring-red-600'
+                          : 'border-gray-900 focus:border-black focus:ring-black'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+                    <button
+                      type="submit"
+                      disabled={saving || !defineHandle}
+                      className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {saving ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      disabled={!defineHandle}
+                      className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <DocumentDuplicateIcon className="h-4 w-4" />
+                      {copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy link'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-            {errors.defineHandle && <p className="text-xs text-red-600">{errors.defineHandle.message}</p>}
           </div>
         </section>
 
@@ -455,29 +458,39 @@ function ProfilePageContent() {
 
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <input
-                {...register('fullName', { required: 'Name is required' })}
-                id="fullName"
-                type="text"
-                placeholder="Full name"
-                aria-label="Full name"
-                className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-              />
-              {errors.fullName && <p className="mt-1 text-xs text-red-600">{errors.fullName.message}</p>}
+              <div className="relative">
+                <input
+                  {...register('fullName', { required: 'Name is required' })}
+                  id="fullName"
+                  type="text"
+                  placeholder="Full name"
+                  aria-label="Full name"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                    fullNameError
+                      ? 'border-red-300 focus:border-red-600 focus:ring-red-600'
+                      : 'border-gray-900 focus:border-black focus:ring-black'
+                  }`}
+                />
+              </div>
             </div>
             <div>
-              <input
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: { value: /\S+@\S+\.\S+/, message: 'Enter a valid email address' },
-                })}
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                aria-label="Email"
-                className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-              />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+              <div className="relative">
+                <input
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: { value: /\S+@\S+\.\S+/, message: 'Enter a valid email address' },
+                  })}
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  aria-label="Email"
+                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                    emailError
+                      ? 'border-red-300 focus:border-red-600 focus:ring-red-600'
+                      : 'border-gray-900 focus:border-black focus:ring-black'
+                  }`}
+                />
+              </div>
             </div>
             <div>
               <input
@@ -507,7 +520,7 @@ function ProfilePageContent() {
                     type="button"
                     onClick={handleResendVerification}
                     disabled={verificationSending}
-                    className="inline-flex items-center justify-center rounded-md border border-gray-900 px-3 py-1.5 text-xs font-medium text-gray-900 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {verificationSending ? 'Sending…' : 'Resend verification email'}
                   </button>
@@ -530,7 +543,7 @@ function ProfilePageContent() {
               type="button"
               onClick={handleCancel}
               disabled={saving}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-gray-900 px-4 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancel
             </button>
@@ -539,7 +552,7 @@ function ProfilePageContent() {
       </form>
 
       <footer className="mt-12 text-center text-xs text-gray-400">
-        define!. &copy; {new Date().getFullYear()} — All rights reserved.
+        dfn!. &copy; {new Date().getFullYear()} — All rights reserved.
       </footer>
     </div>
   );

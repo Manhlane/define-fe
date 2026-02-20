@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 type PaymentDraft = {
   amount: string;
@@ -37,30 +37,6 @@ export default function CreatePaymentLinkPage() {
     email: false,
     description: false,
   });
-  const [toasts, setToasts] = useState<Array<{ id: string; message: string }>>([]);
-
-  function addToast(message: string) {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setToasts((prev) => {
-      if (prev.some((toast) => toast.message === message)) {
-        return prev;
-      }
-      setTimeout(() => {
-        setToasts((current) => current.filter((toast) => toast.id !== id));
-      }, 5000);
-      return [...prev, { id, message }];
-    });
-  }
-
-  function addToasts(messages: string[]) {
-    messages.forEach((message) => {
-      addToast(message);
-    });
-  }
-
-  function removeToast(id: string) {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }
 
   function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -87,16 +63,7 @@ export default function CreatePaymentLinkPage() {
     setContactErrors(nextContactErrors);
     setPaymentErrors(nextErrors);
 
-    const messages = [
-      nextContactErrors.name ? 'Client name is required.' : null,
-      nextContactErrors.surname ? 'Client surname is required.' : null,
-      nextErrors.amount ? 'Amount must be greater than 100.' : null,
-      nextErrors.email ? 'Enter a valid client email address.' : null,
-      nextErrors.description ? 'Description is required.' : null,
-    ].filter(Boolean) as string[];
-
-    if (messages.length > 0) {
-      addToasts(messages);
+    if (nextContactErrors.name || nextContactErrors.surname || nextErrors.amount || nextErrors.email || nextErrors.description) {
       return;
     }
 
@@ -111,30 +78,6 @@ export default function CreatePaymentLinkPage() {
 
       <main className="flex min-h-[calc(100dvh-64px)] flex-col px-6 pt-4 pb-10">
         <div className="mx-auto flex w-full max-w-md flex-col gap-6">
-          {toasts.length > 0 && (
-            <div className="fixed right-4 top-4 z-[60] flex w-[92%] max-w-sm flex-col gap-3">
-              {toasts.map((toast) => (
-                <div key={toast.id} className="rounded-md bg-red-50 p-4">
-                  <div className="flex items-start">
-                    <div className="shrink-0">
-                      <XCircleIcon aria-hidden="true" className="size-5 text-red-400" />
-                    </div>
-                    <div className="ml-3 flex-1 text-sm text-red-700">
-                      {toast.message}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeToast(toast.id)}
-                      className="ml-4 text-red-600 hover:text-red-700"
-                      aria-label="Dismiss"
-                    >
-                      <XMarkIcon aria-hidden="true" className="size-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold leading-tight tracking-tight">
               Get Paid Before the Shoot.
@@ -144,16 +87,18 @@ export default function CreatePaymentLinkPage() {
             </p>
           </div>
 
-          <form onSubmit={handlePaymentSubmit} className="flex flex-col gap-6">
+          <form onSubmit={handlePaymentSubmit} className="flex flex-col gap-6" noValidate>
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <div className="relative">
+                <div className="space-y-1">
+                  <div className="grid grid-cols-1">
                     <input
                       id="client-name"
                       type="text"
                       placeholder="Client name"
                       aria-label="Client name"
+                      aria-invalid={contactErrors.name}
+                      aria-describedby={contactErrors.name ? 'client-name-error' : undefined}
                       value={contactDraft.name}
                       onChange={(event) =>
                         setContactDraft((draft) => ({
@@ -161,21 +106,29 @@ export default function CreatePaymentLinkPage() {
                           name: event.target.value,
                         }))
                       }
-                      className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                      className={`col-start-1 row-start-1 h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
                         contactErrors.name
-                          ? 'border-red-300 focus:border-red-600'
+                          ? 'border-red-300 text-black placeholder:text-neutral-500 focus:border-red-600'
                           : 'border-neutral-300 focus:border-black'
                       }`}
                     />
                   </div>
+                  {contactErrors.name && (
+                    <p id="client-name-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                      <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                      Client name is required.
+                    </p>
+                  )}
                 </div>
-                <div>
-                  <div className="relative">
+                <div className="space-y-1">
+                  <div className="grid grid-cols-1">
                     <input
                       id="client-surname"
                       type="text"
                       placeholder="Client surname"
                       aria-label="Client surname"
+                      aria-invalid={contactErrors.surname}
+                      aria-describedby={contactErrors.surname ? 'client-surname-error' : undefined}
                       value={contactDraft.surname}
                       onChange={(event) =>
                         setContactDraft((draft) => ({
@@ -183,18 +136,24 @@ export default function CreatePaymentLinkPage() {
                           surname: event.target.value,
                         }))
                       }
-                      className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                      className={`col-start-1 row-start-1 h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
                         contactErrors.surname
-                          ? 'border-red-300 focus:border-red-600'
+                          ? 'border-red-300 text-black placeholder:text-neutral-500 focus:border-red-600'
                           : 'border-neutral-300 focus:border-black'
                       }`}
                     />
                   </div>
+                  {contactErrors.surname && (
+                    <p id="client-surname-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                      <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                      Client surname is required.
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div>
-                <div className="relative">
+              <div className="space-y-1">
+                <div className="grid grid-cols-1">
                   <input
                     id="payment-amount"
                     type="number"
@@ -203,6 +162,8 @@ export default function CreatePaymentLinkPage() {
                     step="0.01"
                     placeholder="Amount (e.g. 4500)"
                     aria-label="Amount"
+                    aria-invalid={paymentErrors.amount}
+                    aria-describedby={paymentErrors.amount ? 'payment-amount-error' : undefined}
                     value={paymentDraft.amount}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -210,22 +171,30 @@ export default function CreatePaymentLinkPage() {
                         amount: event.target.value,
                       }))
                     }
-                    className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                    className={`col-start-1 row-start-1 h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
                       paymentErrors.amount
-                        ? 'border-red-300 focus:border-red-600'
+                        ? 'border-red-300 text-black placeholder:text-neutral-500 focus:border-red-600'
                         : 'border-neutral-300 focus:border-black'
                     }`}
                   />
                 </div>
+                {paymentErrors.amount && (
+                  <p id="payment-amount-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                    <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                    Amount must be greater than 100.
+                  </p>
+                )}
               </div>
 
-              <div>
-                <div className="relative">
+              <div className="space-y-1">
+                <div className="grid grid-cols-1">
                   <input
                     id="payment-email"
                     type="email"
                     placeholder="Client email (optional)"
                     aria-label="Client email"
+                    aria-invalid={paymentErrors.email}
+                    aria-describedby={paymentErrors.email ? 'payment-email-error' : undefined}
                     value={paymentDraft.email}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -233,22 +202,30 @@ export default function CreatePaymentLinkPage() {
                         email: event.target.value,
                       }))
                     }
-                    className={`h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
+                    className={`col-start-1 row-start-1 h-[52px] w-full rounded-xl border px-4 text-base focus:outline-none ${
                       paymentErrors.email
-                        ? 'border-red-300 focus:border-red-600'
+                        ? 'border-red-300 text-black placeholder:text-neutral-500 focus:border-red-600'
                         : 'border-neutral-300 focus:border-black'
                     }`}
                   />
                 </div>
+                {paymentErrors.email && (
+                  <p id="payment-email-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                    <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                    Enter a valid client email address.
+                  </p>
+                )}
               </div>
 
-              <div>
-                <div className="relative">
+              <div className="space-y-1">
+                <div className="grid grid-cols-1">
                   <textarea
                     id="payment-description"
                     rows={4}
                     placeholder="Description (e.g. Wedding shoot – 50% deposit)"
                     aria-label="Description"
+                    aria-invalid={paymentErrors.description}
+                    aria-describedby={paymentErrors.description ? 'payment-description-error' : undefined}
                     value={paymentDraft.description}
                     onChange={(event) =>
                       setPaymentDraft((draft) => ({
@@ -256,13 +233,19 @@ export default function CreatePaymentLinkPage() {
                         description: event.target.value,
                       }))
                     }
-                    className={`w-full rounded-xl border px-4 py-3 text-base focus:outline-none ${
+                    className={`col-start-1 row-start-1 w-full rounded-xl border px-4 py-3 text-base focus:outline-none ${
                       paymentErrors.description
-                        ? 'border-red-300 focus:border-red-600'
+                        ? 'border-red-300 text-black placeholder:text-neutral-500 focus:border-red-600'
                         : 'border-neutral-300 focus:border-black'
                     }`}
                   />
                 </div>
+                {paymentErrors.description && (
+                  <p id="payment-description-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                    <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                    Description is required.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -317,6 +300,7 @@ export default function CreatePaymentLinkPage() {
           </form>
         </div>
       </main>
+
     </div>
   );
 }

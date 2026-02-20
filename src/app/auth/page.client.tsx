@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { FcGoogle } from 'react-icons/fc';
-import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -43,12 +43,15 @@ export default function MobileAuthPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [resetErrorMessage, setResetErrorMessage] = useState<string | null>(null);
+  const [networkErrorMessage, setNetworkErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [toasts, setToasts] = useState<Array<{ id: string; message: string }>>([]);
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -65,10 +68,39 @@ export default function MobileAuthPageClient() {
     const nextMode = searchParams?.get('mode');
     if (nextMode === 'register') setMode('register');
     if (nextMode === 'login') setMode('login');
+    if (nextMode === 'reset') setMode('reset');
   }, [searchParams]);
+
+  function setModeAndSync(nextMode: 'login' | 'register' | 'reset') {
+    setMode(nextMode);
+    if (nextMode !== 'reset') {
+      setResetEmail('');
+      setResetSent(false);
+      setResetErrorMessage(null);
+    }
+    setNetworkErrorMessage(null);
+    loginForm.clearErrors();
+    registerForm.clearErrors();
+    router.replace(`/auth?mode=${nextMode}`);
+  }
+
+  function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const emailValue = resetEmail.trim();
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+
+    if (!emailOk) {
+      setResetErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
+    setResetErrorMessage(null);
+    setResetSent(true);
+  }
 
   async function handleLogin(values: LoginValues) {
     setLoading(true);
+    setNetworkErrorMessage(null);
 
     try {
       const res = await fetch(LOGIN_URL, {
@@ -80,7 +112,12 @@ export default function MobileAuthPageClient() {
       const body = (await res.json().catch(() => null)) as LoginResponse | null;
 
       if (!res.ok || !body?.accessToken) {
-        addToast(body?.message || 'Invalid email or password');
+        const errorMessage = body?.message || 'Email or password invalid. Please try again.';
+        loginForm.setError('email', {
+          type: 'server',
+          message: errorMessage,
+        });
+        setNetworkErrorMessage(errorMessage);
         return;
       }
 
@@ -96,7 +133,11 @@ export default function MobileAuthPageClient() {
       );
       router.push('/home');
     } catch {
-      addToast('Network error. Please try again.');
+      loginForm.setError('email', {
+        type: 'server',
+        message: 'Network error. Please try again.',
+      });
+      setNetworkErrorMessage('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -117,15 +158,22 @@ export default function MobileAuthPageClient() {
       });
 
       if (!res.ok) {
-        addToast('Registration failed. Please try again.');
+        registerForm.setError('email', {
+          type: 'server',
+          message: 'Registration failed. Please try again.',
+        });
         return;
       }
 
-      setMode('login');
+      setModeAndSync('login');
       loginForm.reset({ email: values.email, password: '' });
       registerForm.reset();
+      setNetworkErrorMessage(null);
     } catch {
-      addToast('Network error. Please try again.');
+      registerForm.setError('email', {
+        type: 'server',
+        message: 'Network error. Please try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -138,257 +186,272 @@ export default function MobileAuthPageClient() {
 
   const formErrors = mode === 'login' ? loginErrors : registerErrors;
 
-  const extractMessages = useMemo(
-    () =>
-      (errors: typeof formErrors) =>
-        Object.values(errors)
-          .map((field) => field?.message)
-          .filter(Boolean) as string[],
-    []
-  );
-
-  function addToast(message: string) {
-    const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setToasts((prev) => {
-      if (prev.some((toast) => toast.message === message)) {
-        return prev;
-      }
-      setTimeout(() => {
-        setToasts((current) => current.filter((toast) => toast.id !== id));
-      }, 5000);
-      return [...prev, { id, message }];
-    });
-  }
-
-  function addToasts(messages: string[]) {
-    messages.forEach((message) => {
-      addToast(message);
-    });
-  }
-
-  function removeToast(id: string) {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }
-
   return (
     <div className="min-h-[100dvh] bg-white text-black">
-      {toasts.length > 0 && (
-        <div className="fixed right-4 top-4 z-[60] flex w-[92%] max-w-sm flex-col gap-3">
-          {toasts.map((toast) => (
-            <div key={toast.id} className="rounded-md bg-red-50 p-4">
-              <div className="flex items-start">
-                <div className="shrink-0">
-                  <XCircleIcon aria-hidden="true" className="size-5 text-red-400" />
-                </div>
-                <div className="ml-3 flex-1 text-sm text-red-700">
-                  {toast.message}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeToast(toast.id)}
-                  className="ml-4 text-red-600 hover:text-red-700"
-                  aria-label="Dismiss"
-                >
-                  <XMarkIcon aria-hidden="true" className="size-5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
       <div className="flex items-center px-6 pt-12">
-        <div className="text-lg font-semibold tracking-tight">dfn!.</div>
+        <div className="text-4xl font-semibold tracking-tight text-black">dfn!.</div>
       </div>
 
       <main className="flex min-h-[calc(100dvh-64px)] flex-col px-6 pt-4 pb-10">
         <div className="mx-auto flex w-full max-w-sm flex-col gap-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold leading-tight tracking-tight">
-              {mode === 'login' ? 'Sign in' : 'Sign Up'}
+              {mode === 'reset'
+                ? 'Reset password'
+                : mode === 'login'
+                  ? 'Sign In'
+                  : 'Sign Up'}
             </h1>
             <p className="text-sm text-neutral-500">
               {mode === 'login'
                 ? 'Access your secured payments.'
-                : 'Start collecting payments securely.'}
+                : mode === 'register'
+                  ? 'Start collecting payments securely.'
+                  : "Enter your email address and we'll send you a reset link."}
             </p>
           </div>
 
-          <form
-            onSubmit={
-              mode === 'login'
-                ? loginForm.handleSubmit(handleLogin, (errors) => addToasts(extractMessages(errors)))
-                : registerForm.handleSubmit(handleRegister, (errors) => addToasts(extractMessages(errors)))
-            }
-            className="flex flex-col"
-          >
-            <div className="space-y-6">
-              <div className="space-y-4">
-                {mode === 'register' && (
-                  <div>
+          {mode === 'reset' ? (
+            <form onSubmit={handleResetSubmit} className="flex flex-col gap-6" noValidate>
+              <div className="relative">
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                  <input
+                    id="reset-email"
+                    type="email"
+                    placeholder="Email"
+                    aria-label="Email"
+                    value={resetEmail}
+                    onChange={(event) => {
+                      setResetEmail(event.target.value);
+                      setResetSent(false);
+                      setResetErrorMessage(null);
+                    }}
+                    className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
+                      resetErrorMessage
+                        ? 'border-red-300 focus:border-red-600'
+                        : 'border-neutral-300 focus:border-black'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {resetSent && (
+                <p className="text-xs text-emerald-600">
+                  If this email exists, we&apos;ll send a reset link shortly.
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99]"
+              >
+                Send reset link
+              </button>
+              <button
+                type="button"
+                onClick={() => setModeAndSync('login')}
+                className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
+              >
+                Back to sign in
+              </button>
+            </form>
+          ) : (
+            <form
+              onSubmit={
+                mode === 'login'
+                  ? loginForm.handleSubmit(handleLogin)
+                  : registerForm.handleSubmit(handleRegister)
+              }
+              className="flex flex-col"
+              noValidate
+            >
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  {mode === 'register' && (
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                      <div className="relative">
+                        <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                        <input
+                          {...registerForm.register('name')}
+                          id="auth-name"
+                          placeholder="Name"
+                          aria-label="Name"
+                          aria-invalid={Boolean(registerErrors.name)}
+                          className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
+                            registerErrors.name
+                              ? 'border-red-300 focus:border-red-600'
+                              : 'border-neutral-300 focus:border-black'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="relative">
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                       <input
-                        {...registerForm.register('name')}
-                        id="auth-name"
-                        placeholder="Name"
-                        aria-label="Name"
-                        aria-invalid={Boolean(registerErrors.name)}
+                        {...(mode === 'login'
+                          ? loginForm.register('email')
+                          : registerForm.register('email'))}
+                        id="auth-email"
+                        placeholder="Email"
+                        aria-label="Email"
+                        aria-invalid={Boolean(formErrors.email)}
                         className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
-                          registerErrors.name
+                          formErrors.email
                             ? 'border-red-300 focus:border-red-600'
                             : 'border-neutral-300 focus:border-black'
                         }`}
                       />
                     </div>
                   </div>
-                )}
 
-                <div>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                    <input
-                      {...(mode === 'login'
-                        ? loginForm.register('email')
-                        : registerForm.register('email'))}
-                      id="auth-email"
-                      placeholder="Email"
-                      aria-label="Email"
-                      aria-invalid={Boolean(formErrors.email)}
-                      className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
-                        formErrors.email
-                          ? 'border-red-300 focus:border-red-600'
-                          : 'border-neutral-300 focus:border-black'
-                      }`}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                      <input
-                        {...(mode === 'login'
-                          ? loginForm.register('password')
-                          : registerForm.register('password'))}
-                        id="auth-password"
-                        type={
-                          mode === 'login'
-                            ? showPassword ? 'text' : 'password'
-                            : showRegisterPassword ? 'text' : 'password'
-                        }
-                        placeholder="Password"
-                        aria-label="Password"
-                        aria-invalid={Boolean(formErrors.password)}
-                        className={`h-[52px] w-full rounded-xl border pl-11 pr-12 text-base focus:outline-none ${
-                          formErrors.password
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                        <input
+                          {...(mode === 'login'
+                            ? loginForm.register('password')
+                            : registerForm.register('password'))}
+                          id="auth-password"
+                          type={
+                            mode === 'login'
+                              ? showPassword ? 'text' : 'password'
+                              : showRegisterPassword ? 'text' : 'password'
+                          }
+                          placeholder="Password"
+                          aria-label="Password"
+                          aria-invalid={Boolean(formErrors.password)}
+                          className={`h-[52px] w-full rounded-xl border pl-11 pr-12 text-base focus:outline-none ${
+                            formErrors.password
                             ? 'border-red-300 focus:border-red-600'
                             : 'border-neutral-300 focus:border-black'
                         }`}
                       />
                       <button
-                        type="button"
-                        onClick={() =>
-                          mode === 'login'
-                            ? setShowPassword(!showPassword)
-                            : setShowRegisterPassword(!showRegisterPassword)
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2"
-                      >
-                        {(mode === 'login' ? showPassword : showRegisterPassword) ? (
-                          <EyeOff className="h-4 w-4 text-neutral-400" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-neutral-400" />
-                        )}
-                      </button>
-                    </div>
-
-                    {mode === 'login' && (
-                      <div className="text-right">
-                        <button
                           type="button"
-                          onClick={() => router.push('/reset-password')}
-                          className="text-xs font-medium text-black underline"
+                          onClick={() =>
+                            mode === 'login'
+                              ? setShowPassword(!showPassword)
+                              : setShowRegisterPassword(!showRegisterPassword)
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
                         >
-                          Forgot password?
+                          {(mode === 'login' ? showPassword : showRegisterPassword) ? (
+                            <EyeOff className="h-4 w-4 text-neutral-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-neutral-400" />
+                          )}
                         </button>
                       </div>
-                    )}
+
+                      {mode === 'login' && (
+                        <div className="text-right">
+                          <button
+                            type="button"
+                            onClick={() => setModeAndSync('reset')}
+                            className="text-xs font-medium text-black underline"
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {mode === 'register' && (
-                <p className="text-xs text-neutral-500">
-                  By signing up, you agree to the{' '}
-                  <Link href="/terms-and-conditions" className="font-medium text-black underline">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link href="/privacy-policy" className="font-medium text-black underline">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-              )}
-
-              <button
-                disabled={loading}
-                className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
-              >
-                {loading
-                  ? 'Please wait...'
-                  : mode === 'login'
-                    ? 'Sign in'
-                    : 'Sign Up'}
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-neutral-200" />
-                <span className="text-xs text-neutral-400">Or continue with</span>
-                <div className="h-px flex-1 bg-neutral-200" />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading}
-                className="h-[52px] w-full rounded-xl border border-neutral-400 text-sm transition hover:bg-neutral-50 disabled:opacity-70"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  <FcGoogle size={18} />
-                  {googleLoading ? 'Redirecting…' : 'Google'}
-                </span>
-              </button>
-            </div>
-
-            <div className="mt-6 space-y-3 text-center">
-              <p className="text-sm text-neutral-600">
-                {mode === 'login' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setMode('register')}
-                      className="font-medium text-black underline"
-                    >
-                      New to define!? Create your free account
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setMode('login')}
-                      className="font-medium text-black underline"
-                    >
-                      Already have an account? Sign in
-                    </button>
-                  </>
+                {mode === 'login' && networkErrorMessage && (
+                  <div className="flex items-center justify-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-center text-sm text-red-700">
+                    <ExclamationTriangleIcon className="h-4 w-4 text-red-600" />
+                    <span>{networkErrorMessage}</span>
+                  </div>
                 )}
-              </p>
 
-            </div>
-          </form>
+                {mode === 'register' && (
+                  <p className="text-xs text-neutral-500">
+                    By signing up, you agree to the{' '}
+                    <Link
+                      href="/terms-and-conditions"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-black underline"
+                    >
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-black underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                    .
+                  </p>
+                )}
+
+                <button
+                  disabled={loading}
+                  className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
+                >
+                  {loading
+                    ? 'Please wait...'
+                    : mode === 'login'
+                      ? 'Sign In'
+                      : 'Sign Up'}
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-neutral-200" />
+                  <span className="text-xs text-neutral-400">Or continue with</span>
+                  <div className="h-px flex-1 bg-neutral-200" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={googleLoading}
+                  className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:opacity-70"
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <FcGoogle size={18} />
+                    {googleLoading ? 'Redirecting…' : 'Google'}
+                  </span>
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-3 text-center">
+                <p className="text-sm text-neutral-600">
+                  {mode === 'login' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setModeAndSync('register')}
+                        className="font-medium text-black underline"
+                      >
+                        New to dfn!.? Create your free account
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setModeAndSync('login')}
+                        className="font-medium text-black underline"
+                      >
+                        Already have an account? Sign In
+                      </button>
+                    </>
+                  )}
+                </p>
+
+              </div>
+            </form>
+          )}
         </div>
       </main>
 

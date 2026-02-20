@@ -19,7 +19,7 @@ export const NotificationsClient = {
   buildVerifyUrl: (token: string) =>
     `${APP_BASE_URL}/verify-email?token=${encodeURIComponent(token)}`,
   buildResetUrl: (token: string) =>
-    `${APP_BASE_URL}/reset-password?token=${encodeURIComponent(token)}`,
+    `${APP_BASE_URL}/auth?mode=reset&token=${encodeURIComponent(token)}`,
   sendWelcomeEmail: (payload: { email: string; name?: string; verificationUrl?: string | null }) =>
     post('/auth/welcome', {
       ...payload,

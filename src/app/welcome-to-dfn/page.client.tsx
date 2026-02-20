@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 
-export default function LoginPage() {
+export default function LandingPage() {
   const router = useRouter();
 
   return (
@@ -32,11 +32,11 @@ export default function LoginPage() {
             <p className="mt-8 max-w-xl text-lg text-neutral-600 sm:mx-auto sm:text-xl">
               Funds are secured before the shoot and released after delivery.
             </p>
-            <div className="mt-12 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-center">
+            <div className="mt-12 grid w-full max-w-md grid-cols-2 gap-3 sm:flex sm:max-w-none sm:justify-center">
               <button
                 type="button"
                 onClick={() => router.push('/create-payment-link')}
-                className="flex h-[52px] items-center justify-center gap-2 rounded-xl bg-black px-8 text-sm font-medium text-white transition active:scale-[0.99]"
+                className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-black px-3 text-sm font-medium text-white transition active:scale-[0.99] sm:w-auto sm:px-8"
               >
                 Create payment link
                 <ArrowRight className="h-4 w-4" />
@@ -44,18 +44,18 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => router.push('/auth?mode=login')}
-                className="flex h-[52px] items-center justify-center rounded-xl border border-neutral-300 px-8 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
+                className="flex h-[52px] w-full items-center justify-center rounded-xl border border-neutral-300 px-3 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto sm:px-8"
               >
-                Sign in
+                Sign In
               </button>
             </div>
-            <div className="mt-12 text-sm font-medium text-neutral-600">
-              <div className="inline-flex items-center gap-3">
+            <div className="mt-16 text-xs font-medium text-neutral-500 text-center">
+              <div className="inline-flex items-center justify-center gap-2">
                 <span>Powered by</span>
                 <img
                   src="/images/paystack-2.svg"
                   alt="Paystack"
-                  className="h-5"
+                  className="h-4"
                 />
               </div>
             </div>

@@ -187,10 +187,10 @@ function PaymentsPageContent() {
                       key={filter}
                       type="button"
                       onClick={() => handleFilterChange(filter)}
-                      className={`rounded-full border px-4 py-1 text-xs font-medium transition ${
+                      className={`rounded-full border px-4 py-1 text-xs font-medium transition active:scale-[0.99] ${
                         isActive
                           ? 'border-black bg-black text-white'
-                          : 'border-black text-black hover:bg-black hover:text-white'
+                          : 'border-neutral-300 text-black hover:bg-neutral-50'
                       }`}
                     >
                       {filter}
@@ -308,7 +308,7 @@ function PaymentsPageContent() {
               </p>
               <div className="flex items-center gap-2">
                 <button
-                  className="px-3 py-1 text-sm border border-black rounded-lg hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="px-3 py-1 text-sm border border-neutral-300 text-black rounded-lg transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                   disabled={safePage <= 1}
                 >
@@ -318,7 +318,7 @@ function PaymentsPageContent() {
                   Page {safePage} / {totalPages}
                 </span>
                 <button
-                  className="px-3 py-1 text-sm border border-black rounded-lg hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="px-3 py-1 text-sm border border-neutral-300 text-black rounded-lg transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={safePage >= totalPages}
                 >
@@ -350,7 +350,7 @@ function PaymentsPageContent() {
               <button
                 type="button"
                 onClick={() => setWithdrawModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-black px-4 py-2 text-xs font-medium text-black transition hover:bg-gray-100"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-neutral-300 px-4 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
               >
                 <BanknotesIcon className="h-4 w-4" />
                 Withdraw Funds
@@ -393,12 +393,12 @@ function PaymentsPageContent() {
                 </div>
 
                 <div className="flex justify-end gap-3 pt-6">
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-100 transition"
-                  >
-                    Close
-                  </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-black transition hover:bg-neutral-50 active:scale-[0.99]"
+                >
+                  Close
+                </button>
                   <button
                     onClick={() =>
                       alert(`Downloading invoice for ${selectedTransaction.reference}...`)
@@ -484,7 +484,7 @@ function PaymentsPageContent() {
                 <button
                   type="button"
                   onClick={() => setRequestModalOpen(false)}
-                  className="rounded-full border border-black px-4 py-2 text-xs font-medium text-black hover:bg-gray-100"
+                  className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
                 >
                   Cancel
                 </button>
@@ -544,7 +544,7 @@ function PaymentsPageContent() {
                 <button
                   type="button"
                   onClick={() => setWithdrawModalOpen(false)}
-                  className="rounded-full border border-black px-4 py-2 text-xs font-medium text-black hover:bg-gray-100"
+                  className="rounded-full border border-neutral-300 px-4 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
                 >
                   Cancel
                 </button>

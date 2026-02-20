@@ -112,9 +112,9 @@ export default function Home() {
             </button>
             <Link
               href="/transactions"
-              className="inline-flex w-full items-center justify-center rounded-full border border-black px-5 py-3 text-sm font-medium text-black transition hover:bg-neutral-100 sm:w-auto"
+              className="inline-flex w-full items-center justify-center border border-black px-5 py-3 text-sm font-medium text-black transition hover:bg-neutral-100 sm:w-auto"
             >
-              View transactions/links
+              View transactions
             </Link>
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function Home() {
                 </button>
               </div>
 
-              <form className="mt-5 space-y-4" onSubmit={handlePaymentSubmit}>
+              <form className="mt-5 space-y-4" onSubmit={handlePaymentSubmit} noValidate>
                 <div>
                   <input
                     type="number"
@@ -321,7 +321,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setActiveModal('payment')}
-                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black hover:bg-neutral-50"
+                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
                 >
                   Edit payment details
                 </button>
@@ -352,23 +352,23 @@ export default function Home() {
 
               <div className="mt-5 space-y-3">
                 <Link
-                  href="/login"
+                  href="/welcome-to-dfn"
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
                 >
                   <FcGoogle />
                   Continue with Google
                 </Link>
                 <Link
-                  href="/login"
-                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black hover:bg-neutral-50"
+                  href="/welcome-to-dfn"
+                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
                 >
                   Create account with email
                 </Link>
                 <Link
-                  href="/login"
+                  href="/welcome-to-dfn"
                   className="text-sm font-normal text-neutral-500 underline"
                 >
-                  Already have an account? Sign in
+                  Already have an account? Sign In
                 </Link>
               </div>
             </>

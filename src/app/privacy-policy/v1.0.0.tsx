@@ -202,7 +202,7 @@ export default function PrivacyPolicyV1() {
         </section>
 
         <div className="mt-12 text-sm text-gray-500">
-          © {new Date().getFullYear()} define!. All rights reserved.
+          © {new Date().getFullYear()} define!. (dfn!.) All rights reserved.
         </div>
       </div>
     </div>

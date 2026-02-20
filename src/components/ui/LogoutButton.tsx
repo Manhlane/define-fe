@@ -21,7 +21,7 @@ export default function LogoutButton() {
     //   localStorage.removeItem('refreshToken');
 
       // Redirect to login
-      router.push('/login');
+      router.push('/welcome-to-dfn');
     } catch (e) {
       console.error('Logout failed:', e);
     } finally {

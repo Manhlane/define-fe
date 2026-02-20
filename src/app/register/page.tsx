@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import AuthCard from '../../components/ui/AuthCard';
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { CircleStackIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { CircleStackIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { NotificationsClient } from '../../lib/notifications';
 
 // ---- Validation schema ----
@@ -38,6 +38,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -49,7 +50,6 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const [successModal, setSuccessModal] = useState<string[] | null>(null);
-  const [errorModal, setErrorModal] = useState<string[] | null>(null);
 
 useEffect(() => {
   setIsClient(true);
@@ -79,23 +79,18 @@ useEffect(() => {
 
         setSuccessModal(['Account created successfully! Please verify your email.']);
         setTimeout(() => {
-          router.push('/login');
+          router.push('/welcome-to-dfn');
           setSuccessModal(null);
         }, 1500);
         return;
       }
 
-      setErrorModal([payload?.message || 'Registration failed. Please try again.']);
+      setError('email', {
+        type: 'server',
+        message: payload?.message || 'Registration failed. Please try again.',
+      });
     } catch {
-      setErrorModal(['Network error. Please try again.']);
-    }
-  }
-
-  // collect validation errors
-  function onError(formErrors: typeof errors) {
-    const msgs = Object.values(formErrors).map((e) => e?.message || 'Invalid input');
-    if (msgs.length > 0) {
-      setErrorModal(msgs);
+      setError('email', { type: 'server', message: 'Network error. Please try again.' });
     }
   }
 
@@ -105,7 +100,7 @@ useEffect(() => {
   const okInput =
     'border-gray-300 focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900';
   const errInput =
-    'text-red-900 placeholder:text-red-300 border-red-300 focus:ring-2 focus:ring-red-600 focus:border-red-600';
+    'text-black placeholder:text-gray-400 border-red-300 focus:ring-2 focus:ring-red-600 focus:border-red-600';
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -127,41 +122,6 @@ useEffect(() => {
               <CircleStackIcon className="mx-auto h-10 w-10 animate-spin text-gray-900 dark:text-white" />
               <p className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Creating your account…</p>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">We’re setting things up for you.</p>
-            </DialogPanel>
-          </div>
-        </Dialog>
-      )}
-
-      {isClient && (
-        <Dialog
-          open={errorModal !== null}
-          onClose={() => setErrorModal(null)}
-          className="relative z-[90]"
-        >
-          <DialogBackdrop
-            transition
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-200"
-          />
-          <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
-            <DialogPanel
-              transition
-              className="w-full max-w-sm transform rounded-2xl bg-white px-6 py-7 text-center shadow-xl transition-all data-[closed]:scale-95 data-[closed]:opacity-0 dark:bg-gray-900/95 dark:text-white"
-            >
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full ring-1 ring-black/20 bg-white dark:bg-transparent">
-                <ExclamationTriangleIcon className="h-7 w-7 text-black dark:text-white" />
-              </div>
-              <div className="mt-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                {errorModal?.map((msg, idx) => (
-                  <p key={idx}>{msg}</p>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setErrorModal(null)}
-                className="mt-6 inline-flex items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-200"
-              >
-                Got it
-              </button>
             </DialogPanel>
           </div>
         </Dialog>
@@ -198,9 +158,9 @@ useEffect(() => {
       {/* Card */}
       <div className="flex flex-1 items-center justify-center px-4">
         <AuthCard>
-          <form onSubmit={handleSubmit(onSubmit, onError)} noValidate className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             {/* Name */}
-            <div>
+            <div className="relative">
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <User size={20} />
@@ -216,7 +176,7 @@ useEffect(() => {
             </div>
 
             {/* Email */}
-            <div>
+            <div className="relative">
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <Mail size={20} />
@@ -232,7 +192,7 @@ useEffect(() => {
             </div>
 
             {/* Password */}
-            <div>
+            <div className="relative">
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <Lock size={20} />
@@ -255,7 +215,7 @@ useEffect(() => {
             </div>
 
             {/* Confirm Password */}
-            <div>
+            <div className="relative">
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-black">
                   <Lock size={20} />
@@ -290,7 +250,7 @@ useEffect(() => {
 
             <p className="mt-4 text-sm text-center">
               Already have an account?{' '}
-              <Link href="/login" className="underline hover:text-gray-700">
+              <Link href="/welcome-to-dfn" className="underline hover:text-gray-700">
                 Log in
               </Link>
             </p>
