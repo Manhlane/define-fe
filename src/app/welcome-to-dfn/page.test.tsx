@@ -25,10 +25,7 @@ describe('LandingPage', () => {
   it('navigates to the auth page from the sign in button', async () => {
     render(<LandingPage />);
 
-    const user = userEvent.setup();
-    const signInButton = screen.getByRole('button', { name: /sign in/i });
-    await user.click(signInButton);
-
-    expect(pushMock).toHaveBeenCalledWith('/auth?mode=login');
+    const signInLink = screen.getByRole('link', { name: /sign in/i });
+    expect(signInLink).toHaveAttribute('href', '/auth?mode=login');
   });
 });
