@@ -30,6 +30,7 @@ const AUTH_BASE_URL =
 const LOGIN_URL = `${AUTH_BASE_URL}/login`;
 const REGISTER_URL = `${AUTH_BASE_URL}/register`;
 const GOOGLE_AUTH_URL = `${AUTH_BASE_URL}/google`;
+const FORGOT_PASSWORD_URL = `${AUTH_BASE_URL}/forgot-password`;
 
 type LoginResponse = {
   message?: string;
@@ -49,6 +50,7 @@ export default function MobileAuthPageClient() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
   const [resetErrorMessage, setResetErrorMessage] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
   const [networkErrorMessage, setNetworkErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -84,7 +86,7 @@ export default function MobileAuthPageClient() {
     router.replace(`/auth?mode=${nextMode}`);
   }
 
-  function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleResetSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const emailValue = resetEmail.trim();
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
@@ -95,7 +97,27 @@ export default function MobileAuthPageClient() {
     }
 
     setResetErrorMessage(null);
-    setResetSent(true);
+    setResetLoading(true);
+    setResetSent(false);
+
+    try {
+      const res = await fetch(FORGOT_PASSWORD_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailValue }),
+      });
+
+      if (!res.ok) {
+        setResetErrorMessage('Unable to send reset link. Please try again.');
+        return;
+      }
+
+      setResetSent(true);
+    } catch {
+      setResetErrorMessage('Network error. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
   }
 
   async function handleLogin(values: LoginValues) {
@@ -253,9 +275,10 @@ export default function MobileAuthPageClient() {
 
               <button
                 type="submit"
-                className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99]"
+                disabled={resetLoading}
+                className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
               >
-                Send reset link
+                {resetLoading ? 'Sending…' : 'Send reset link'}
               </button>
               <button
                 type="button"
