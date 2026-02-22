@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 type PaymentDraft = {
@@ -17,6 +19,7 @@ type ContactDraft = {
 };
 
 export default function CreatePaymentLinkPage() {
+  const router = useRouter();
   const [contactDraft, setContactDraft] = useState<ContactDraft>({
     name: '',
     surname: '',
@@ -72,8 +75,16 @@ export default function CreatePaymentLinkPage() {
 
   return (
     <div className="min-h-[100dvh] bg-white text-black">
-      <div className="flex items-center px-6 pt-12">
+      <div className="flex items-center justify-between px-6 pt-12">
         <div className="text-lg font-semibold tracking-tight">dfn!.</div>
+        <button
+          type="button"
+          onClick={() => router.push('/welcome-to-dfn')}
+          aria-label="Close"
+          className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition hover:text-black hover:bg-neutral-50 hover:scale-105 active:scale-95"
+        >
+          <X className="h-4 w-4 transition-transform group-hover:rotate-90" />
+        </button>
       </div>
 
       <main className="flex min-h-[calc(100dvh-64px)] flex-col px-6 pt-4 pb-10">

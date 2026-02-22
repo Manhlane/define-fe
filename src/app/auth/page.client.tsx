@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
-import { ExclamationCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { Mail, Lock, Eye, EyeOff, User, X } from 'lucide-react';
+import { CheckCircleIcon, ExclamationCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { FcGoogle } from 'react-icons/fc';
 
 const loginSchema = z.object({
@@ -218,8 +218,16 @@ export default function MobileAuthPageClient() {
 
   return (
     <div className="min-h-[100dvh] bg-white text-black">
-      <div className="flex items-center px-6 pt-12">
+      <div className="flex items-center justify-between px-6 pt-12">
         <div className="text-2xl font-semibold tracking-tight text-black">dfn!.</div>
+        <button
+          type="button"
+          onClick={() => router.push('/welcome-to-dfn')}
+          aria-label="Close"
+          className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition hover:text-black hover:bg-neutral-50 hover:scale-105 active:scale-95"
+        >
+          <X className="h-4 w-4 transition-transform group-hover:rotate-90" />
+        </button>
       </div>
 
       <main className="flex min-h-[calc(100dvh-64px)] flex-col px-6 pt-4 pb-10">
@@ -268,9 +276,10 @@ export default function MobileAuthPageClient() {
               </div>
 
               {resetSent && (
-                <p className="text-xs text-emerald-600">
-                  If this email exists, we&apos;ll send a reset link shortly.
-                </p>
+                <div className="flex items-center gap-2 border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                  <CheckCircleIcon className="h-5 w-5" />
+                  <span>If this email exists, we&apos;ll send a reset link shortly.</span>
+                </div>
               )}
 
               <button
@@ -279,13 +288,6 @@ export default function MobileAuthPageClient() {
                 className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
               >
                 {resetLoading ? 'Sending…' : 'Send reset link'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setModeAndSync('login')}
-                className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
-              >
-                Back to sign in
               </button>
             </form>
           ) : (

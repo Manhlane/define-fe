@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Lock } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 import { CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 
 const resetSchema = z
@@ -44,6 +44,14 @@ export default function ResetPasswordClient() {
       setMessage('This reset link is missing or invalid.');
     }
   }, [token]);
+
+  useEffect(() => {
+    if (status !== 'success') return;
+    const timer = setTimeout(() => {
+      router.push('/auth?mode=login');
+    }, 1700);
+    return () => clearTimeout(timer);
+  }, [status, router]);
 
   async function onSubmit(values: ResetValues) {
     if (!token) {
@@ -91,8 +99,16 @@ export default function ResetPasswordClient() {
 
   return (
     <div className="min-h-[100dvh] bg-white text-black">
-      <div className="flex items-center px-6 pt-12">
+      <div className="flex items-center justify-between px-6 pt-12">
         <div className="text-xl font-semibold tracking-tight text-black">dfn!.</div>
+        <button
+          type="button"
+          onClick={() => router.push('/welcome-to-dfn')}
+          aria-label="Close"
+          className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition hover:text-black hover:bg-neutral-50 hover:scale-105 active:scale-95"
+        >
+          <X className="h-4 w-4 transition-transform group-hover:rotate-90" />
+        </button>
       </div>
 
       <main className="mx-auto flex w-full max-w-[560px] flex-col px-6 pt-6 pb-12">
@@ -123,6 +139,13 @@ export default function ResetPasswordClient() {
                 <ExclamationCircleIcon className="h-4 w-4 text-red-600" />
               )}
               <span>{message}</span>
+            </div>
+          )}
+
+          {status === 'success' && (
+            <div className="flex items-center gap-2 text-sm text-neutral-500">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-neutral-400" />
+              <span>Redirecting to the sign in page…</span>
             </div>
           )}
 
@@ -181,13 +204,6 @@ export default function ResetPasswordClient() {
               {status === 'submitting' ? 'Updating…' : 'Reset password'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => router.push('/auth?mode=login')}
-              className="h-[52px] w-full rounded-none border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
-            >
-              Back to Sign In
-            </button>
           </form>
         </div>
       </main>

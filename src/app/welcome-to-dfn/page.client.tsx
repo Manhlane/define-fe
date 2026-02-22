@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 
@@ -41,13 +42,12 @@ export default function LandingPage() {
                 Create payment link
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => router.push('/auth?mode=login')}
-                className="flex h-[52px] w-full items-center justify-center rounded-xl border border-neutral-300 px-3 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto sm:px-8"
+              <Link
+                href="/auth?mode=login"
+                className="flex h-[52px] w-full items-center justify-center rounded-none border border-neutral-300 px-3 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto sm:px-8"
               >
                 Sign In
-              </button>
+              </Link>
             </div>
             <div className="mt-16 text-xs font-medium text-neutral-500 text-center">
               <div className="inline-flex items-center justify-center gap-2">
