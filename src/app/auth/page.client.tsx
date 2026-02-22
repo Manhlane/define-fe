@@ -7,12 +7,12 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { FcGoogle } from 'react-icons/fc';
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 const registerSchema = z.object({
@@ -186,10 +186,18 @@ export default function MobileAuthPageClient() {
 
   const formErrors = mode === 'login' ? loginErrors : registerErrors;
 
+  const renderFieldError = (message?: string) =>
+    message ? (
+      <p className="flex items-center gap-1 text-xs leading-4 text-red-600">
+        <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+        {message}
+      </p>
+    ) : null;
+
   return (
     <div className="min-h-[100dvh] bg-white text-black">
       <div className="flex items-center px-6 pt-12">
-        <div className="text-4xl font-semibold tracking-tight text-black">dfn!.</div>
+        <div className="text-2xl font-semibold tracking-tight text-black">dfn!.</div>
       </div>
 
       <main className="flex min-h-[calc(100dvh-64px)] flex-col px-6 pt-4 pb-10">
@@ -213,7 +221,7 @@ export default function MobileAuthPageClient() {
 
           {mode === 'reset' ? (
             <form onSubmit={handleResetSubmit} className="flex flex-col gap-6" noValidate>
-              <div className="relative">
+              <div className="space-y-1">
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                   <input
@@ -234,6 +242,7 @@ export default function MobileAuthPageClient() {
                     }`}
                   />
                 </div>
+                {renderFieldError(resetErrorMessage || undefined)}
               </div>
 
               {resetSent && (
@@ -269,7 +278,7 @@ export default function MobileAuthPageClient() {
               <div className="space-y-6">
                 <div className="space-y-4">
                   {mode === 'register' && (
-                    <div className="relative">
+                    <div className="space-y-1">
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                         <input
@@ -285,10 +294,11 @@ export default function MobileAuthPageClient() {
                           }`}
                         />
                       </div>
+                      {renderFieldError(registerErrors.name?.message)}
                     </div>
                   )}
 
-                  <div className="relative">
+                  <div className="space-y-1">
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                       <input
@@ -303,14 +313,14 @@ export default function MobileAuthPageClient() {
                           formErrors.email
                             ? 'border-red-300 focus:border-red-600'
                             : 'border-neutral-300 focus:border-black'
-                        }`}
+                          }`}
                       />
                     </div>
+                    {renderFieldError(formErrors.email?.message)}
                   </div>
 
-                  <div className="relative">
-                    <div className="space-y-2">
-                      <div className="relative">
+                  <div className="space-y-2">
+                    <div className="relative">
                         <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                         <input
                           {...(mode === 'login'
@@ -348,6 +358,8 @@ export default function MobileAuthPageClient() {
                         </button>
                       </div>
 
+                      {renderFieldError(formErrors.password?.message)}
+
                       {mode === 'login' && (
                         <div className="text-right">
                           <button
@@ -359,7 +371,6 @@ export default function MobileAuthPageClient() {
                           </button>
                         </div>
                       )}
-                    </div>
                   </div>
                 </div>
 
