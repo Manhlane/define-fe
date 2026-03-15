@@ -12,6 +12,7 @@ import {
   ClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline'
 
 // Navigation
@@ -25,6 +26,7 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
+  { name: 'Create payment link', icon: PlusIcon, href: '/create-payment-link' },
   { name: 'Home', icon: HomeIcon, href: '/home' },
   { name: 'Transactions', icon: ClockIcon, href: '/transactions' },
 ]
@@ -166,14 +168,14 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           disabled={isLogout && isLoggingOut}
           className={classNames(
             isActive ? 'bg-gray-50' : 'hover:bg-gray-50',
-            'group flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-left text-sm font-semibold text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-300 dark:hover:bg-white/5 dark:bg-transparent'
+            'group flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-300 dark:hover:bg-white/5 dark:bg-transparent'
           )}
         >
           <item.icon
             aria-hidden="true"
             className={classNames(
-              'h-5 w-5 shrink-0 text-gray-400',
-              isActive ? 'text-gray-500 dark:text-gray-300' : 'group-hover:text-gray-500 dark:group-hover:text-gray-300'
+              'h-5 w-5 shrink-0 text-black',
+              isActive ? 'text-black' : 'group-hover:text-black'
             )}
           />
           {!sidebarCollapsed && <span className="truncate">{item.name}</span>}

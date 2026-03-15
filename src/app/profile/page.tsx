@@ -6,31 +6,33 @@ import { useForm } from 'react-hook-form';
 import {
   ArrowPathIcon,
   CheckCircleIcon,
-  DocumentDuplicateIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { NotificationsClient } from '../../lib/notifications';
 
 type VerificationStatus = 'verified' | 'pending';
 type ProfileFormValues = {
   fullName: string;
+  businessName: string;
   email: string;
   phone: string;
   verificationStatus: VerificationStatus;
-  defineHandle: string;
+  bankName: string;
+  accountNumber: string;
+  accountType: string;
 };
 
 type ProfileData = ProfileFormValues & {
   id: string;
   avatarUrl: string | null;
-  shareUrl: string;
 };
 
 type ProfileFeedback = { type: 'success' | 'error'; message: string } | null;
 type ApiMessage = { message?: string };
 type VerificationPayload = ApiMessage & { verificationToken?: string };
 
-const SHARE_PREFIX = 'http://define.africa/';
-const SHARE_PREFIX_LABEL = 'define.africa/';
 const AUTH_BASE_URL =
   process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth';
 const RESEND_VERIFICATION_URL = `${AUTH_BASE_URL}/resend-verification`;
@@ -38,10 +40,13 @@ const RESEND_VERIFICATION_URL = `${AUTH_BASE_URL}/resend-verification`;
 function mapProfileToForm(profile: ProfileData): ProfileFormValues {
   return {
     fullName: profile.fullName,
+    businessName: profile.businessName,
     email: profile.email,
     phone: profile.phone,
     verificationStatus: profile.verificationStatus,
-    defineHandle: profile.defineHandle,
+    bankName: profile.bankName,
+    accountNumber: profile.accountNumber,
+    accountType: profile.accountType,
   };
 }
 
@@ -63,12 +68,14 @@ async function readFileAsDataUrl(file: File): Promise<string> {
 const MOCK_PROFILE: ProfileData = {
   id: 'user-001',
   fullName: 'Manhlane Mamabolo',
+  businessName: 'Manhlane Photography',
   email: 'mamabolo.m32@gmail.com',
   phone: '+27 71 123 4567',
   verificationStatus: 'pending',
-  defineHandle: 'manhlane',
+  bankName: '',
+  accountNumber: '',
+  accountType: '',
   avatarUrl: null,
-  shareUrl: `${SHARE_PREFIX}manhlane`,
 };
 
 async function fetchProfileStub(): Promise<ProfileData> {
@@ -78,10 +85,7 @@ async function fetchProfileStub(): Promise<ProfileData> {
 
 async function updateProfileStub(payload: ProfileData): Promise<ProfileData> {
   await delay(600);
-  return {
-    ...payload,
-    shareUrl: `${SHARE_PREFIX}${payload.defineHandle}`,
-  };
+  return { ...payload };
 }
 
 async function uploadAvatarStub(file: File): Promise<string> {
@@ -100,18 +104,35 @@ function ProfilePageContent() {
   } = useForm<ProfileFormValues>({
     defaultValues: {
       fullName: '',
+      businessName: '',
       email: '',
       phone: '',
       verificationStatus: 'pending',
-      defineHandle: '',
+      bankName: '',
+      accountNumber: '',
+      accountType: '',
     },
   });
 
-  const defineHandle = watch('defineHandle');
-  const fullName = watch('fullName');
-  const verificationStatus = watch('verificationStatus');
-  const emailValue = watch('email');
-  const defineHandleError = Boolean(errors.defineHandle);
+  const [
+    fullName,
+    businessName,
+    emailValue,
+    phoneValue,
+    bankName,
+    accountNumber,
+    accountType,
+    verificationStatus,
+  ] = watch([
+    'fullName',
+    'businessName',
+    'email',
+    'phone',
+    'bankName',
+    'accountNumber',
+    'accountType',
+    'verificationStatus',
+  ]);
   const fullNameError = Boolean(errors.fullName);
   const emailError = Boolean(errors.email);
 
@@ -120,7 +141,6 @@ function ProfilePageContent() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarDirty, setAvatarDirty] = useState(false);
   const [feedback, setFeedback] = useState<ProfileFeedback>(null);
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [verificationSending, setVerificationSending] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [session, setSession] = useState<{ accessToken?: string; email?: string; name?: string } | null>(null);
@@ -186,8 +206,36 @@ function ProfilePageContent() {
     return `${parts[0]!.charAt(0)}${parts[parts.length - 1]!.charAt(0)}`.toUpperCase();
   }, [fullName]);
 
-  const shareableLink = `${SHARE_PREFIX}${defineHandle ?? ''}`;
   const canSubmit = isDirty || avatarDirty;
+  const profileCompletion = useMemo(() => {
+    const checks = [
+      Boolean(avatarUrl),
+      Boolean(fullName?.trim()),
+      Boolean(emailValue?.trim()),
+      Boolean(phoneValue?.trim()),
+      Boolean(bankName?.trim()),
+      Boolean(accountNumber?.trim()),
+      Boolean(accountType?.trim()),
+      verificationStatus === 'verified',
+    ];
+    const completed = checks.filter(Boolean).length;
+    const rawPercent = (completed / checks.length) * 100;
+    const percent = Math.round(rawPercent / 5) * 5;
+    return {
+      completed,
+      total: checks.length,
+      percent: Number.isFinite(percent) ? percent : 0,
+    };
+  }, [
+    accountNumber,
+    accountType,
+    avatarUrl,
+    bankName,
+    emailValue,
+    fullName,
+    phoneValue,
+    verificationStatus,
+  ]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!profile) {
@@ -200,7 +248,6 @@ function ProfilePageContent() {
         ...profile,
         ...values,
         avatarUrl,
-        shareUrl: `${SHARE_PREFIX}${values.defineHandle}`,
       });
       setProfile(nextProfile);
       setAvatarUrl(nextProfile.avatarUrl);
@@ -222,20 +269,6 @@ function ProfilePageContent() {
     setAvatarUrl(profile.avatarUrl);
     setAvatarDirty(false);
     setFeedback(null);
-  };
-
-  const handleCopyLink = async () => {
-    if (!defineHandle) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(shareableLink);
-      setCopyStatus('success');
-      setTimeout(() => setCopyStatus('idle'), 2000);
-    } catch {
-      setCopyStatus('error');
-      setTimeout(() => setCopyStatus('idle'), 2000);
-    }
   };
 
   const handleAvatarClick = () => {
@@ -260,12 +293,6 @@ function ProfilePageContent() {
       event.target.value = '';
     }
   };
-
-  const handleRemoveAvatar = () => {
-    setAvatarUrl(null);
-    setAvatarDirty(true);
-  };
-
 
   const handleResendVerification = async () => {
     if (verificationSending) {
@@ -317,51 +344,92 @@ function ProfilePageContent() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-      <header className="text-center sm:text-left">
-        <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Profile</h1>
-        <p className="mt-1 text-sm text-gray-500">Update your account and payout details</p>
-      </header>
-
-      <section className="mt-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
-        <div className="relative h-24 w-24 overflow-hidden rounded-full border border-gray-900 bg-gray-100 text-gray-600">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="Profile picture" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-2xl font-semibold">
-              {initials}
-            </div>
-          )}
-          {avatarLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-              <ArrowPathIcon className="h-5 w-5 animate-spin text-gray-600" />
-            </div>
-          )}
-        </div>
-
-        <div className="flex w-full flex-col items-center gap-3 sm:items-start">
+    <form onSubmit={onSubmit} noValidate>
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+        <header className="space-y-4">
           <div>
-            <p className="text-lg font-semibold text-gray-900">{fullName || 'Your profile'}</p>
-            <p className="text-sm text-gray-500">{emailValue || session?.email || 'Add your email'}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Profile</h1>
+            <p className="mt-1 text-sm text-gray-500 sm:text-base">
+              Complete your profile to start receiving payments.
+            </p>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={handleAvatarClick}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto"
-              disabled={avatarLoading}
+          <div className="flex items-center gap-4">
+            <div
+              className="h-2 w-full flex-1 overflow-hidden rounded-full bg-white"
+              role="progressbar"
+              aria-valuenow={profileCompletion.percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
             >
-              Change photo
-            </button>
-            <button
-              type="button"
-              onClick={handleRemoveAvatar}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:opacity-60 sm:w-auto"
-              disabled={avatarLoading || !avatarUrl}
-            >
-              Remove
-            </button>
+              <div
+                className="h-full bg-gray-900 transition-[width] duration-500"
+                style={{ width: `${profileCompletion.percent}%` }}
+              />
+            </div>
+            <span className="text-sm font-semibold text-gray-700">{profileCompletion.percent}%</span>
+          </div>
+        </header>
+
+        {feedback && (
+          <div
+            className={`mt-5 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+              feedback.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+          >
+            {feedback.type === 'success' ? (
+              <CheckCircleIcon className="mt-0.5 h-5 w-5" />
+            ) : (
+              <ExclamationTriangleIcon className="mt-0.5 h-5 w-5" />
+            )}
+            <span>{feedback.message}</span>
+          </div>
+        )}
+
+        <div className="mt-6 space-y-6">
+          <section className="space-y-4">
+            <div className="flex flex-col items-center gap-1 text-center">
+              <p className="text-lg font-semibold text-gray-900 sm:text-xl">{fullName || 'Your profile'}</p>
+              {businessName?.trim() && (
+                <p className="text-sm text-gray-500">{businessName}</p>
+              )}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleAvatarClick}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleAvatarClick();
+                  }
+                }}
+                className="relative mt-2 h-20 w-20 cursor-pointer focus:outline-none"
+                aria-label="Change profile photo"
+              >
+                <div className="relative h-full w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 text-gray-700 transition hover:bg-neutral-200/70">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="Profile picture" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-lg font-semibold">
+                      {initials}
+                    </div>
+                  )}
+                  {avatarLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+                      <ArrowPathIcon className="h-4 w-4 animate-spin text-gray-600" />
+                    </div>
+                  )}
+                </div>
+                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-200 bg-white text-gray-700">
+                  <PencilSquareIcon className="h-3.5 w-3.5" />
+                </span>
+              </div>
+              <div className="space-y-1 text-xs text-gray-500">
+                <p>JPG, PNG or GIF. Max size 2MB.</p>
+              </div>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -369,112 +437,49 @@ function ProfilePageContent() {
               className="hidden"
               onChange={handleAvatarChange}
             />
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {feedback?.type === 'success' && (
-        <div className="mt-6 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-          <CheckCircleIcon className="h-5 w-5" />
-          <span>{feedback.message}</span>
-        </div>
-      )}
-
-      <form className="mt-8 space-y-10 border-t border-black pt-8 sm:mt-10 sm:pt-10" onSubmit={onSubmit} noValidate>
-        <section className="space-y-6">
-          <header>
-            <h2 className="text-lg font-semibold text-gray-900">Your define! Link</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Personalise your profile link so clients can reach you easily.
-            </p>
-          </header>
-
-          <div className="max-w-xl space-y-4">
-            <hr className="border-black" />
-            <div className="relative mt-2">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-                  <div className="flex flex-1 rounded-md shadow-sm">
-                    <span
-                      className={`inline-flex w-full items-center gap-1 rounded-md border bg-white px-3 text-sm font-medium sm:w-auto sm:rounded-l-md sm:border-r-0 ${
-                        defineHandleError ? 'border-red-300' : 'border-gray-900'
-                      }`}
-                    >
-                      <span className="text-gray-600">http://</span>
-                      <span className="text-black">{SHARE_PREFIX_LABEL}</span>
-                    </span>
-                    <input
-                      {...register('defineHandle', {
-                        required: 'Handle is required',
-                        pattern: {
-                          value: /^[a-z0-9-]{3,30}$/i,
-                          message: 'Use 3-30 letters, numbers, or dashes',
-                        },
-                      })}
-                      id="defineHandle"
-                      type="text"
-                      placeholder="yourname"
-                      aria-label="Profile handle"
-                      className={`block w-full min-w-0 flex-1 rounded-md border px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 sm:rounded-r-md sm:rounded-l-none sm:border-l-0 ${
-                        defineHandleError
-                          ? 'border-red-300 focus:border-red-600 focus:ring-red-600'
-                          : 'border-gray-900 focus:border-black focus:ring-black'
-                      }`}
-                    />
-                  </div>
-                  <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-                    <button
-                      type="submit"
-                      disabled={saving || !defineHandle}
-                      className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {saving ? 'Saving…' : 'Save changes'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCopyLink}
-                      disabled={!defineHandle}
-                      className="inline-flex w-full flex-1 items-center justify-center gap-2 rounded-md bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      <DocumentDuplicateIcon className="h-4 w-4" />
-                      {copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy link'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-6 border-t border-black pt-10">
-          <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <section className="border-t border-neutral-200 pt-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Personal Details</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Personal details</h2>
               <p className="text-sm text-gray-500">Update how you appear across the platform.</p>
             </div>
-          </header>
 
-          <hr className="border-black" />
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <div className="relative">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="fullName" className="text-xs font-semibold text-gray-700">
+                  Full name
+                </label>
                 <input
                   {...register('fullName', { required: 'Name is required' })}
                   id="fullName"
                   type="text"
-                  placeholder="Full name"
+                  placeholder="Manhlane Mamabolo"
                   aria-label="Full name"
-                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                  className={`mt-2 block h-[40px] w-full rounded-xl border px-4 text-base text-black placeholder:text-black focus:outline-none focus:ring-0 ${
                     fullNameError
-                      ? 'border-red-300 focus:border-red-600 focus:ring-red-600'
-                      : 'border-gray-900 focus:border-black focus:ring-black'
+                      ? 'border-red-300 focus:border-red-600'
+                      : 'border-neutral-300 focus:border-black'
                   }`}
                 />
               </div>
-            </div>
-            <div>
-              <div className="relative">
+              <div>
+                <label htmlFor="businessName" className="text-xs font-semibold text-gray-700">
+                  Business name (optional)
+                </label>
+                <input
+                  {...register('businessName')}
+                  id="businessName"
+                  type="text"
+                  placeholder="e.g. Manhlane Photography"
+                  aria-label="Business name"
+                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black placeholder:text-black focus:border-black focus:outline-none focus:ring-0"
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="text-xs font-semibold text-gray-700">
+                  Email address
+                </label>
                 <input
                   {...register('email', {
                     required: 'Email is required',
@@ -484,77 +489,145 @@ function ProfilePageContent() {
                   type="email"
                   placeholder="you@example.com"
                   aria-label="Email"
-                  className={`mt-1 block w-full rounded-md border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 ${
+                  className={`mt-2 block h-[40px] w-full rounded-xl border px-4 text-base text-black placeholder:text-black focus:outline-none focus:ring-0 ${
                     emailError
-                      ? 'border-red-300 focus:border-red-600 focus:ring-red-600'
-                      : 'border-gray-900 focus:border-black focus:ring-black'
+                      ? 'border-red-300 focus:border-red-600'
+                      : 'border-neutral-300 focus:border-black'
                   }`}
                 />
               </div>
+              <div>
+                <label htmlFor="phone" className="text-xs font-semibold text-gray-700">
+                  Phone number
+                </label>
+                <input
+                  {...register('phone')}
+                  id="phone"
+                  type="tel"
+                  placeholder="+27 71 123 4567"
+                  aria-label="Phone number"
+                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black placeholder:text-black focus:border-black focus:outline-none focus:ring-0"
+                />
+              </div>
             </div>
-            <div>
-              <input
-                {...register('phone')}
-                id="phone"
-                type="tel"
-                placeholder="Phone number"
-                aria-label="Phone number"
-                className="mt-1 block w-full rounded-md border border-gray-900 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <span className="block text-sm font-medium text-gray-700">Email verification</span>
+
+            <div className="mt-6">
+              <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Email verification
+              </span>
               <input type="hidden" {...register('verificationStatus')} />
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                    verificationStatus === 'verified'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}
-                >
-                  {verificationStatus === 'verified' ? 'Verified' : 'Pending verification'}
-                </span>
-                {verificationStatus !== 'verified' && (
+              {verificationStatus === 'verified' ? (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                  <CheckCircleIcon className="h-4 w-4" />
+                  Email verified
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-col gap-3 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-2">
+                    <ExclamationTriangleIcon className="mt-0.5 h-5 w-5" />
+                    <div>
+                      <p>Email not verified</p>
+                      <p className="text-xs text-red-700">Check your inbox for the verification link.</p>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={handleResendVerification}
                     disabled={verificationSending}
-                    className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
-                    {verificationSending ? 'Sending…' : 'Resend verification email'}
+                    {verificationSending ? 'Sending…' : 'Resend email'}
                   </button>
-                )}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="border-t border-neutral-200 pt-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Bank details</h2>
+              <p className="text-sm text-gray-500">Required to receive payments.</p>
+            </div>
+
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="bankName" className="text-xs font-semibold text-gray-700">
+                  Bank name
+                </label>
+                <select
+                  {...register('bankName')}
+                  id="bankName"
+                  aria-label="Bank name"
+                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black focus:border-black focus:outline-none focus:ring-0"
+                >
+                  <option value="">Select your bank</option>
+                  <option value="FNB">FNB</option>
+                  <option value="Standard Bank">Standard Bank</option>
+                  <option value="ABSA">ABSA</option>
+                  <option value="Nedbank">Nedbank</option>
+                  <option value="Capitec">Capitec</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="accountNumber" className="text-xs font-semibold text-gray-700">
+                  Account number
+                </label>
+                <input
+                  {...register('accountNumber')}
+                  id="accountNumber"
+                  type="text"
+                  placeholder="1234567890"
+                  aria-label="Account number"
+                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black placeholder:text-black focus:border-black focus:outline-none focus:ring-0"
+                />
+              </div>
+              <div>
+                <label htmlFor="accountType" className="text-xs font-semibold text-gray-700">
+                  Account type
+                </label>
+                <select
+                  {...register('accountType')}
+                  id="accountType"
+                  aria-label="Account type"
+                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black focus:border-black focus:outline-none focus:ring-0"
+                >
+                  <option value="">Select</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="savings">Savings</option>
+                  <option value="business">Business</option>
+                </select>
               </div>
             </div>
-          </div>
-        </section>
 
-        <div className="flex flex-col items-stretch gap-4 border-t border-black pt-6 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-3">
-            <button
-              type="submit"
-              disabled={saving || !canSubmit}
-              className="inline-flex w-full items-center justify-center rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-            >
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
+            <div className="mt-5 flex items-start gap-2 border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+              <InformationCircleIcon className="mt-0.5 h-5 w-5" />
+              <p>
+                Your bank details are encrypted and secure. Payments will be transferred to this account after
+                services are completed.
+              </p>
+            </div>
+          </section>
+
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-end sm:gap-3">
             <button
               type="button"
               onClick={handleCancel}
               disabled={saving}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              className="inline-flex w-full items-center justify-center border border-neutral-300 px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               Cancel
             </button>
+            <button
+              type="submit"
+              disabled={saving || !canSubmit}
+              className="inline-flex w-full items-center justify-center bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
           </div>
         </div>
-      </form>
-
-      <footer className="mt-12 text-center text-xs text-gray-400">
-        dfn!. &copy; {new Date().getFullYear()} — All rights reserved.
-      </footer>
-    </div>
+      </div>
+    </form>
   );
 }
 

@@ -6,15 +6,13 @@ import { useRouter } from 'next/navigation';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import DefineLayout from '../../components/DefineLayout';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
-import { FcGoogle } from 'react-icons/fc';
 
 export default function Home() {
   const router = useRouter();
   const [activeModal, setActiveModal] = useState<
-    'none' | 'payment' | 'payment-preview' | 'auth-gate'
+    'none' | 'payment' | 'payment-preview'
   >('none');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
   const [paymentDraft, setPaymentDraft] = useState({
     amount: '',
     email: '',
@@ -33,28 +31,11 @@ export default function Home() {
       return;
     }
     const id = setTimeout(() => {
-      setActiveModal(hasSession ? 'none' : 'auth-gate');
+      setActiveModal('none');
       setIsGeneratingLink(false);
     }, 3500);
     return () => clearTimeout(id);
-  }, [hasSession, isGeneratingLink]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const stored = window.localStorage.getItem('define.auth');
-    if (!stored) {
-      setHasSession(false);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as { accessToken?: string };
-      setHasSession(Boolean(parsed?.accessToken));
-    } catch {
-      setHasSession(false);
-    }
-  }, []);
+  }, [isGeneratingLink]);
 
   function openPaymentModal() {
     router.push('/create-payment-link');
@@ -126,7 +107,7 @@ export default function Home() {
         className="fixed inset-0 z-50"
       >
         <DialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
-        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto md:max-h-none md:overflow-visible md:max-w-lg">
+        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-none bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto md:max-h-none md:overflow-visible md:max-w-lg">
           {activeModal === 'payment' && (
             <>
               <div className="flex items-center justify-between">
@@ -329,50 +310,6 @@ export default function Home() {
             </>
           )}
 
-          {activeModal === 'auth-gate' && (
-            <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">
-                  Create an account to send this payment request.
-                </h3>
-                <button
-                  type="button"
-                  onClick={closeActiveModal}
-                  className="text-sm text-neutral-500"
-                >
-                  Close
-                </button>
-              </div>
-              <p className="mt-3 text-sm text-neutral-600">
-                Your payment link is ready — this just helps us protect payments.
-              </p>
-              <p className="mt-2 text-sm text-neutral-600">
-                We&apos;ll save this link in your dashboard so you can track payment status.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <Link
-                  href="/welcome-to-dfn"
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
-                >
-                  <FcGoogle />
-                  Continue with Google
-                </Link>
-                <Link
-                  href="/welcome-to-dfn"
-                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
-                >
-                  Create account with email
-                </Link>
-                <Link
-                  href="/welcome-to-dfn"
-                  className="text-sm font-normal text-neutral-500 underline"
-                >
-                  Already have an account? Sign In
-                </Link>
-              </div>
-            </>
-          )}
         </DialogPanel>
       </Dialog>
     </DefineLayout>
