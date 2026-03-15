@@ -86,6 +86,22 @@ export default function CreatePaymentLinkPage() {
 
   function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!hasSession) {
+      if (authGateLoading || authGateOpen) {
+        return;
+      }
+      setAuthGateLoading(true);
+      if (authGateTimerRef.current) {
+        clearTimeout(authGateTimerRef.current);
+      }
+      authGateTimerRef.current = setTimeout(() => {
+        setAuthGateLoading(false);
+        setAuthGateOpen(true);
+      }, 2500);
+      return;
+    }
+
     const nameValue = contactDraft.name.trim();
     const amountValue = Number(paymentDraft.amount);
     const clientEmailValue = paymentDraft.email.trim();
@@ -108,21 +124,6 @@ export default function CreatePaymentLinkPage() {
     setPaymentErrors(nextErrors);
 
     if (nextContactErrors.name || nextErrors.amount || nextErrors.email || nextErrors.serviceDescription) {
-      return;
-    }
-
-    if (!hasSession) {
-      if (authGateLoading || authGateOpen) {
-        return;
-      }
-      setAuthGateLoading(true);
-      if (authGateTimerRef.current) {
-        clearTimeout(authGateTimerRef.current);
-      }
-      authGateTimerRef.current = setTimeout(() => {
-        setAuthGateLoading(false);
-        setAuthGateOpen(true);
-      }, 2500);
       return;
     }
 
@@ -280,7 +281,7 @@ export default function CreatePaymentLinkPage() {
                   shootDate: event.target.value,
                 }))
               }
-              className="h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base focus:border-black focus:outline-none"
+              className="h-[40px] w-full rounded-xl border border-neutral-300 px-3 text-base focus:border-black focus:outline-none sm:px-4"
             />
           </div>
           <div className="space-y-1">
@@ -298,7 +299,7 @@ export default function CreatePaymentLinkPage() {
                   deliveryDate: event.target.value,
                 }))
               }
-              className="h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base focus:border-black focus:outline-none"
+              className="h-[40px] w-full rounded-xl border border-neutral-300 px-3 text-base focus:border-black focus:outline-none sm:px-4"
             />
           </div>
         </div>
@@ -384,7 +385,7 @@ export default function CreatePaymentLinkPage() {
                 paymentDueBy: event.target.value,
               }))
             }
-            className="h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base focus:border-black focus:outline-none"
+            className="h-[40px] w-full rounded-xl border border-neutral-300 px-3 text-base focus:border-black focus:outline-none sm:px-4"
           />
         </div>
       </div>
@@ -447,7 +448,7 @@ export default function CreatePaymentLinkPage() {
   };
 
   const pageContent = (
-    <div className="min-h-[100dvh] bg-neutral-50 text-black lg:bg-white">
+    <div className="min-h-[100dvh] bg-white text-black">
       {!hasSession && (
         <div className="flex items-center justify-between px-6 pt-12">
           <div className="text-lg font-semibold tracking-tight">dfn!.</div>
