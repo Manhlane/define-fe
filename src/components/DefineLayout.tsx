@@ -26,9 +26,9 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  { name: 'Create payment link', icon: PlusIcon, href: '/create-payment-link' },
+  { name: 'Create payment request', icon: PlusIcon, href: '/create-payment-link' },
   { name: 'Home', icon: HomeIcon, href: '/home' },
-  { name: 'Transactions', icon: ClockIcon, href: '/transactions' },
+  { name: 'Dashboard', icon: ClockIcon, href: '/transactions' },
 ]
 
 const bottomNav: NavItem[] = [

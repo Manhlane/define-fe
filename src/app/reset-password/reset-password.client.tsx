@@ -199,7 +199,7 @@ export default function ResetPasswordClient() {
             <button
               type="submit"
               disabled={status === 'submitting' || isLocked}
-              className="h-[52px] w-full rounded-none bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
+              className="h-[52px] w-full rounded-md bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
             >
               {status === 'submitting' ? 'Updating…' : 'Reset password'}
             </button>

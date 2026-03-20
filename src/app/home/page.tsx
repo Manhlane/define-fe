@@ -93,7 +93,7 @@ export default function Home() {
             </button>
             <Link
               href="/transactions"
-              className="inline-flex w-full items-center justify-center border border-black px-5 py-3 text-sm font-medium text-black transition hover:bg-neutral-100 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-black px-5 py-3 text-sm font-medium text-black transition hover:bg-neutral-100 sm:w-auto"
             >
               View transactions
             </Link>

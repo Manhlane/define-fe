@@ -94,6 +94,19 @@ async function uploadAvatarStub(file: File): Promise<string> {
   return dataUrl;
 }
 
+function persistProfileToStorage(profile: ProfileData) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  const payload = {
+    fullName: profile.fullName,
+    businessName: profile.businessName,
+    email: profile.email,
+    avatarUrl: profile.avatarUrl,
+  };
+  window.localStorage.setItem('define.profile', JSON.stringify(payload));
+}
+
 function ProfilePageContent() {
   const {
     register,
@@ -157,6 +170,7 @@ function ProfilePageContent() {
         }
         setProfile(data);
         setAvatarUrl(data.avatarUrl);
+        persistProfileToStorage(data);
         reset(mapProfileToForm(data));
       } catch {
         if (isActive) {
@@ -252,6 +266,7 @@ function ProfilePageContent() {
       setProfile(nextProfile);
       setAvatarUrl(nextProfile.avatarUrl);
       setAvatarDirty(false);
+      persistProfileToStorage(nextProfile);
       reset(mapProfileToForm(nextProfile));
       setFeedback({ type: 'success', message: 'Profile updated successfully.' });
     } catch {

@@ -30,12 +30,39 @@ body {
   font-family: var(--font-sans);
 }
 
+html {
+  font-family: var(--font-sans);
+}
+
 button,
 input,
 select,
 textarea {
   font-family: inherit;
-  border-radius: 0 !important;
+  border-radius: 0.5rem !important;
+}
+
+.input-join-right {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.input-join-left {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
+.date-input::-webkit-inner-spin-button,
+.date-input::-webkit-clear-button {
+  display: none;
+}
+
+.date-input {
+  appearance: none;
 }
 
 h1,

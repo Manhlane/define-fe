@@ -44,7 +44,7 @@ export default function LandingPage() {
               </button>
               <Link
                 href="/auth?mode=login"
-                className="flex h-[52px] w-full items-center justify-center rounded-none border border-neutral-300 px-3 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto sm:px-8"
+                className="flex h-[52px] w-full items-center justify-center rounded-lg border border-neutral-300 px-3 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] sm:w-auto sm:px-8"
               >
                 Sign In
               </Link>
