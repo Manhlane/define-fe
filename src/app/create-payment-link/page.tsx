@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import {
   ArrowLeftIcon,
@@ -22,9 +22,7 @@ import DefineLayout from '../../components/DefineLayout';
 type PaymentDraft = {
   amount: string;
   email: string;
-  shootType: string;
   serviceDescription: string;
-  deliverables: string;
   shootDate: string;
   deliveryDate: string;
   paymentDueBy: string;
@@ -38,10 +36,6 @@ type ContactDraft = {
 export default function CreatePaymentLinkPage() {
   const router = useRouter();
   const [hasSession, setHasSession] = useState(false);
-  const [senderName, setSenderName] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
-  const [senderInitials, setSenderInitials] = useState('');
-  const [senderBusinessName, setSenderBusinessName] = useState('');
   const [contactDraft, setContactDraft] = useState<ContactDraft>({
     name: '',
     phone: '',
@@ -53,9 +47,7 @@ export default function CreatePaymentLinkPage() {
   const [paymentDraft, setPaymentDraft] = useState<PaymentDraft>({
     amount: '',
     email: '',
-    shootType: 'Wedding',
     serviceDescription: '',
-    deliverables: '',
     shootDate: '',
     deliveryDate: '',
     paymentDueBy: '',
@@ -67,12 +59,18 @@ export default function CreatePaymentLinkPage() {
     shootDate?: string;
     deliveryDate?: string;
     deliverables?: string;
+    deposit?: string;
   }>({});
   const [mobileStep, setMobileStep] = useState(0);
   const [linkCreated, setLinkCreated] = useState(false);
   const [copied, setCopied] = useState(false);
   const [deliverablesList, setDeliverablesList] = useState<string[]>([]);
   const [deliverableInput, setDeliverableInput] = useState('');
+  const [requireDeposit, setRequireDeposit] = useState(false);
+  const [depositMode, setDepositMode] = useState<'percent' | 'fixed'>('percent');
+  const [depositPercent, setDepositPercent] = useState(50);
+  const [depositFixed, setDepositFixed] = useState('');
+  const [showStepperErrors, setShowStepperErrors] = useState(false);
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [authGateLoading, setAuthGateLoading] = useState(false);
   const authGateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,9 +87,25 @@ export default function CreatePaymentLinkPage() {
   const [draftId, setDraftId] = useState('');
   const amountValue = Number(paymentDraft.amount);
   const serviceAmount = Number.isFinite(amountValue) && amountValue > 0 ? amountValue : 0;
+  const depositPercentValue = Math.min(Math.max(depositPercent, 0), 100);
+  const depositFixedValue = Number(depositFixed);
+  const rawDepositAmount =
+    depositMode === 'percent'
+      ? serviceAmount * (depositPercentValue / 100)
+      : Number.isFinite(depositFixedValue)
+        ? depositFixedValue
+        : 0;
+  const depositAmount = requireDeposit
+    ? Math.min(Math.max(rawDepositAmount, 0), serviceAmount)
+    : 0;
+  const remainderAmount = Math.max(serviceAmount - depositAmount, 0);
   const platformFee = serviceAmount * 0.05;
+  const depositFee = depositAmount * 0.05;
+  const remainderFee = remainderAmount * 0.05;
   const clientPays = serviceAmount + platformFee;
   const youReceive = serviceAmount;
+  const clientPaysNow = depositAmount + depositFee;
+  const clientPaysLater = remainderAmount + remainderFee;
   const formatZar = (value: number) => {
     const safe = Number.isFinite(value) ? value : 0;
     const whole = Math.round(safe).toString();
@@ -147,10 +161,7 @@ export default function CreatePaymentLinkPage() {
       ? contactDraft.phone.trim()
       : `+27 ${contactDraft.phone.trim()}`
     : '+27 XX XXX XXXX';
-  const deliverablesPreview =
-    deliverablesList.length > 0 ? deliverablesList.join(', ') : 'Not specified';
-  const senderBusinessNamePreview =
-    senderBusinessName || (senderName ? `${senderName} Photography` : 'Your business');
+  const hasDeliverables = deliverablesList.length > 0;
   const QUICK_DELIVERABLES = [
     '300 edited photos',
     'Online gallery',
@@ -159,25 +170,6 @@ export default function CreatePaymentLinkPage() {
     'Highlight video',
     'Sneak peeks',
   ];
-  const formatDisplayNameFromEmail = (email: string) => {
-    if (!email) return '';
-    const local = email.split('@')[0] ?? '';
-    if (!local) return '';
-    return local
-      .replace(/[._-]+/g, ' ')
-      .trim()
-      .split(' ')
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
-  };
-  const getInitials = (name: string, email: string) => {
-    const source = name?.trim() || formatDisplayNameFromEmail(email) || 'Define';
-    const parts = source.split(' ').filter(Boolean);
-    if (parts.length === 0) return 'DF';
-    if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-    return `${parts[0]!.charAt(0)}${parts[parts.length - 1]!.charAt(0)}`.toUpperCase();
-  };
   const openDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     const input = ref.current;
     if (!input) return;
@@ -202,35 +194,7 @@ export default function CreatePaymentLinkPage() {
       const isLoggedIn = Boolean(parsed?.accessToken);
       setHasSession(isLoggedIn);
       if (isLoggedIn) {
-        const emailValue = (parsed?.email ?? '').trim().toLowerCase();
-        let profileName = '';
-        let profileBusiness = '';
-        if (typeof window !== 'undefined') {
-          try {
-            const storedProfile = window.localStorage.getItem('define.profile');
-            if (storedProfile) {
-              const profile = JSON.parse(storedProfile) as {
-                fullName?: string;
-                businessName?: string;
-                email?: string;
-              };
-              profileName = profile.fullName?.trim() ?? '';
-              profileBusiness = profile.businessName?.trim() ?? '';
-            }
-          } catch {
-            // ignore parse errors
-          }
-        }
-        const nameValue =
-          profileName ||
-          parsed?.name?.trim() ||
-          parsed?.fullName?.trim() ||
-          formatDisplayNameFromEmail(emailValue) ||
-          'Your account';
-        setSenderName(nameValue);
-        setSenderEmail(emailValue);
-        setSenderBusinessName(profileBusiness);
-        setSenderInitials(getInitials(nameValue, emailValue));
+        // session is all we need here
       }
     } catch {
       setHasSession(false);
@@ -257,6 +221,12 @@ export default function CreatePaymentLinkPage() {
 
   function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const isValid = validateForm();
+    if (!isValid) {
+      setShowStepperErrors(true);
+      return;
+    }
 
     if (!hasSession) {
       if (authGateLoading || authGateOpen) {
@@ -357,6 +327,17 @@ export default function CreatePaymentLinkPage() {
             : amountValue < 100
               ? 'Amount must be at least R100 to create a payment link'
               : undefined,
+      deposit: !requireDeposit
+        ? undefined
+        : depositMode === 'percent'
+          ? depositPercentValue <= 0 || depositPercentValue > 100
+            ? 'Enter a deposit percentage between 1 and 100'
+            : undefined
+          : !Number.isFinite(depositFixedValue) || depositFixedValue <= 0
+            ? 'Enter a valid deposit amount (numbers only)'
+            : depositFixedValue >= serviceAmount && serviceAmount > 0
+              ? 'Deposit must be less than the total amount'
+              : undefined,
     };
 
     return { nextContactErrors, nextErrors };
@@ -374,7 +355,8 @@ export default function CreatePaymentLinkPage() {
       nextErrors.serviceDescription ||
       nextErrors.shootDate ||
       nextErrors.deliveryDate ||
-      nextErrors.deliverables
+      nextErrors.deliverables ||
+      nextErrors.deposit
     );
   }
 
@@ -468,9 +450,7 @@ export default function CreatePaymentLinkPage() {
     setPaymentDraft({
       amount: '',
       email: '',
-      shootType: 'Wedding',
       serviceDescription: '',
-      deliverables: '',
       shootDate: '',
       deliveryDate: '',
       paymentDueBy: '',
@@ -478,6 +458,10 @@ export default function CreatePaymentLinkPage() {
     setPaymentErrors({});
     setDeliverablesList([]);
     setDeliverableInput('');
+    setRequireDeposit(false);
+    setDepositMode('percent');
+    setDepositPercent(50);
+    setDepositFixed('');
     setMobileStep(0);
     setLinkCreated(false);
     setCopied(false);
@@ -486,10 +470,6 @@ export default function CreatePaymentLinkPage() {
 
   function syncDeliverables(next: string[]) {
     setDeliverablesList(next);
-    setPaymentDraft((draft) => ({
-      ...draft,
-      deliverables: next.join('\n'),
-    }));
     if (paymentErrors.deliverables) {
       setPaymentErrors((prev) => ({ ...prev, deliverables: undefined }));
     }
@@ -623,18 +603,18 @@ export default function CreatePaymentLinkPage() {
               }`}
             />
           </div>
-          <div className="flex items-start gap-3 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 text-emerald-500" />
-            <p className="text-emerald-700">
-              We&apos;ll send your client a payment confirmation by email - free. Confirmation, reminders &amp; receipts at no cost.
-            </p>
-          </div>
           {paymentErrors.email && (
             <p id="payment-email-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
               <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
               {paymentErrors.email}
             </p>
           )}
+          <div className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 text-neutral-500" />
+            <p className="text-neutral-700">
+              We&apos;ll send your client a payment confirmation by email - free. Confirmation, reminders &amp; receipts at no cost.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -991,28 +971,242 @@ export default function CreatePaymentLinkPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
-        <div className="flex items-center justify-between">
-          <span>Service amount</span>
-          <span>{formatZar(serviceAmount)}</span>
+      <div className="space-y-3 rounded-lg border border-neutral-200 bg-white px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-neutral-900">Require a deposit</p>
+            <p className="text-xs text-neutral-400">Split into deposit now + remainder later</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setRequireDeposit((prev) => !prev);
+              if (paymentErrors.deposit) {
+                setPaymentErrors((prev) => ({ ...prev, deposit: undefined }));
+              }
+            }}
+            aria-pressed={requireDeposit}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full border transition ${
+              requireDeposit ? 'border-black bg-black' : 'border-neutral-300 bg-neutral-200'
+            }`}
+          >
+            <span
+              className={`absolute left-1 h-4 w-4 rounded-full bg-white transition ${
+                requireDeposit ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
-        <div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
-          <span>Platform fee (5%)</span>
-          <span>{formatZar(platformFee)}</span>
-        </div>
-        <div className="my-3 border-t border-neutral-200" />
-        <div className="flex items-center justify-between font-semibold text-neutral-900">
-          <span>Client pays</span>
-          <span>{formatZar(clientPays)}</span>
-        </div>
-        <div className="mt-1 flex items-center justify-between font-semibold text-emerald-700">
-          <span>You receive</span>
-          <span>{formatZar(youReceive)}</span>
-        </div>
+
+        {requireDeposit && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setDepositMode('percent');
+                  if (paymentErrors.deposit) {
+                    setPaymentErrors((prev) => ({ ...prev, deposit: undefined }));
+                  }
+                }}
+                className={`h-10 rounded-lg border text-sm font-semibold ${
+                  depositMode === 'percent'
+                    ? 'border-black bg-black text-white'
+                    : 'border-neutral-300 bg-white text-neutral-700'
+                }`}
+              >
+                By percentage
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDepositMode('fixed');
+                  if (paymentErrors.deposit) {
+                    setPaymentErrors((prev) => ({ ...prev, deposit: undefined }));
+                  }
+                }}
+                className={`h-10 rounded-lg border text-sm font-semibold ${
+                  depositMode === 'fixed'
+                    ? 'border-black bg-black text-white'
+                    : 'border-neutral-300 bg-white text-neutral-700'
+                }`}
+              >
+                Fixed amount
+              </button>
+            </div>
+
+            {depositMode === 'percent' ? (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-neutral-600">Deposit percentage</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={depositPercent}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      setDepositPercent(Number.isNaN(next) ? 0 : next);
+                      if (paymentErrors.deposit) {
+                        setPaymentErrors((prev) => ({ ...prev, deposit: undefined }));
+                      }
+                    }}
+                    className="h-2 w-full cursor-pointer accent-black"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={depositPercent}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      setDepositPercent(Number.isNaN(next) ? 0 : next);
+                      if (paymentErrors.deposit) {
+                        setPaymentErrors((prev) => ({ ...prev, deposit: undefined }));
+                      }
+                    }}
+                    className="h-10 w-20 rounded-lg border border-neutral-300 px-2 text-sm text-neutral-900 focus:border-black focus:outline-none"
+                  />
+                </div>
+                <p className="text-xs text-neutral-500">
+                  Deposit amount: <span className="font-semibold text-neutral-900">{formatZar(depositAmount)}</span>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-neutral-600">Deposit amount</label>
+                <div className="mt-1 flex w-full">
+                  <div
+                    className={`flex h-[40px] shrink-0 items-center rounded-l-md rounded-r-none bg-white px-3 text-sm font-semibold text-neutral-500 outline outline-1 -outline-offset-1 ${
+                      paymentErrors.deposit ? 'outline-red-300' : 'outline-neutral-300'
+                    }`}
+                  >
+                    ZAR
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0"
+                    aria-label="Deposit amount"
+                    aria-invalid={Boolean(paymentErrors.deposit)}
+                    aria-describedby={paymentErrors.deposit ? 'deposit-error' : undefined}
+                    value={formatCurrencyInput(depositFixed)}
+                    onChange={(event) => {
+                      const value = normalizeCurrencyInput(event.target.value);
+                      setDepositFixed(value);
+                      if (paymentErrors.deposit) {
+                        setPaymentErrors((prev) => ({ ...prev, deposit: undefined }));
+                      }
+                    }}
+                    className={`input-join-right -ml-px block h-[40px] w-full grow rounded-r-md bg-white px-3 text-base text-black outline outline-1 -outline-offset-1 placeholder:text-neutral-400 focus:outline focus:outline-2 focus:-outline-offset-2 ${
+                      paymentErrors.deposit
+                        ? 'outline-red-300 focus:outline-red-600'
+                        : 'outline-neutral-300 focus:outline-black'
+                    }`}
+                  />
+                </div>
+              </div>
+            )}
+
+            {paymentErrors.deposit && (
+              <p id="deposit-error" className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                {paymentErrors.deposit}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-        <LockClosedIcon className="mt-0.5 h-5 w-5" />
+      <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700">
+        {!requireDeposit ? (
+          <>
+            <div className="flex items-center justify-between">
+              <span>Service amount</span>
+              <span>{formatZar(serviceAmount)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
+              <span>Platform fee (5%)</span>
+              <span>{formatZar(platformFee)}</span>
+            </div>
+            <div className="my-2 border-t border-neutral-200/60" />
+            <div className="flex items-center justify-between font-semibold text-neutral-900">
+              <span>Client pays</span>
+              <span>{formatZar(clientPays)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between font-semibold text-emerald-700">
+              <span>You receive</span>
+              <span>{formatZar(youReceive)}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-neutral-400">
+              <div className="flex items-center gap-2">
+                <span>Deposit</span>
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                  Due now
+                </span>
+              </div>
+              <span>{depositMode === 'percent' ? 'Percentage' : 'Fixed'}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span>Deposit amount</span>
+              <span>{formatZar(depositAmount)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
+              <span>Platform fee (5%)</span>
+              <span>{formatZar(depositFee)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between font-semibold text-neutral-900">
+              <span>Client pays now</span>
+              <span>{formatZar(clientPaysNow)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between font-semibold text-emerald-700">
+              <span>You receive now</span>
+              <span>{formatZar(depositAmount)}</span>
+            </div>
+
+            <div className="my-2 border-t border-neutral-200/60" />
+
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-neutral-400">
+              <div className="flex items-center gap-2">
+                <span>Remainder</span>
+                <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
+                  After shoot
+                </span>
+              </div>
+              <span>Later</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span>Balance due</span>
+              <span>{formatZar(remainderAmount)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-xs text-neutral-500">
+              <span>Platform fee (5%)</span>
+              <span>{formatZar(remainderFee)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between font-semibold text-neutral-900">
+              <span>Client pays later</span>
+              <span>{formatZar(clientPaysLater)}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between font-semibold text-emerald-700">
+              <span>You receive later</span>
+              <span>{formatZar(remainderAmount)}</span>
+            </div>
+
+            <div className="my-3 border-t border-neutral-200" />
+
+            <div className="flex items-center justify-between font-semibold text-neutral-900">
+              <span>Total invoice</span>
+              <span>{formatZar(clientPays)}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex items-start gap-3 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+        <LockClosedIcon className="mt-0.5 h-5 w-5 text-neutral-500" />
         <p className="font-medium">
           Your client’s payment is held securely and released only after you deliver the agreed work.
         </p>
@@ -1055,23 +1249,32 @@ export default function CreatePaymentLinkPage() {
     { id: 'service-details', label: 'Shoot' },
     { id: 'payment-details', label: 'Payment' },
   ];
+  const stepHeadings = [
+    'Who is your client?',
+    'Tell us about the shoot',
+    'How much do you charge',
+  ];
 
   const maxMobileStep = mobileSlides.length - 1;
   const isLastMobileStep = mobileStep === maxMobileStep;
   const completedStep = linkCreated ? desktopSteps.length : mobileStep;
   const allowStepNav = !linkCreated;
+  const currentStepHeading =
+    stepHeadings[Math.min(mobileStep, stepHeadings.length - 1)];
   const { nextContactErrors: liveContactErrors, nextErrors: livePaymentErrors } =
     getValidationErrors();
-  const stepHasErrors = [
-    Boolean(liveContactErrors.name || liveContactErrors.phone || livePaymentErrors.email),
-    Boolean(
-      livePaymentErrors.serviceDescription ||
-        livePaymentErrors.shootDate ||
-        livePaymentErrors.deliveryDate ||
-        livePaymentErrors.deliverables
-    ),
-    Boolean(livePaymentErrors.amount),
-  ];
+  const stepHasErrors = showStepperErrors
+    ? [
+        Boolean(liveContactErrors.name || liveContactErrors.phone || livePaymentErrors.email),
+        Boolean(
+          livePaymentErrors.serviceDescription ||
+            livePaymentErrors.shootDate ||
+            livePaymentErrors.deliveryDate ||
+            livePaymentErrors.deliverables
+        ),
+        Boolean(livePaymentErrors.amount || livePaymentErrors.deposit),
+      ]
+    : [false, false, false];
   const goToMobileStep = (step: number) => {
     const nextStep = Math.max(0, Math.min(step, maxMobileStep));
     setMobileStep(nextStep);
@@ -1110,11 +1313,11 @@ export default function CreatePaymentLinkPage() {
           <form onSubmit={handlePaymentSubmit} className="flex flex-col gap-6" noValidate>
             <div className="mx-auto w-full max-w-md lg:max-w-5xl">
               <div className="lg:hidden">
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 flex w-full items-center justify-between">
                   {desktopSteps.map((step, index) => {
                     const isVisited = index < completedStep;
                     const isInvalid = isVisited && stepHasErrors[index];
-                    const isComplete = isVisited && !stepHasErrors[index];
+                    const isComplete = isVisited && !isInvalid;
                     const isCurrent = index === completedStep && !linkCreated;
                     return (
                       <button
@@ -1122,22 +1325,18 @@ export default function CreatePaymentLinkPage() {
                         type="button"
                         onClick={() => allowStepNav && goToMobileStep(index)}
                         disabled={!allowStepNav}
-                        className="flex flex-col items-center gap-1 text-xs"
+                        className="flex flex-1 flex-col items-center gap-1 text-xs"
                       >
                         <span
                           className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                            isInvalid
-                              ? 'border border-red-500 bg-white text-red-500'
-                              : isComplete
-                                ? 'bg-black text-white'
-                                : isCurrent
-                                  ? 'border border-black bg-white text-black'
-                                  : 'border border-neutral-200 bg-white text-neutral-400'
+                            isComplete
+                              ? 'bg-black text-white'
+                              : isCurrent
+                                ? 'border border-black bg-white text-black'
+                                : 'border border-neutral-200 bg-white text-neutral-400'
                           }`}
                         >
-                          {isInvalid ? (
-                            <X className="h-4 w-4" />
-                          ) : isComplete ? (
+                          {isComplete ? (
                             <CheckIcon className="h-4 w-4" />
                           ) : (
                             index + 1
@@ -1145,11 +1344,9 @@ export default function CreatePaymentLinkPage() {
                         </span>
                         <span
                           className={`font-medium ${
-                            isInvalid
-                              ? 'text-red-500'
-                              : isComplete || isCurrent
-                                ? 'text-neutral-900'
-                                : 'text-neutral-400'
+                            isComplete || isCurrent
+                              ? 'text-neutral-900'
+                              : 'text-neutral-400'
                           }`}
                         >
                           {step.label}
@@ -1158,39 +1355,41 @@ export default function CreatePaymentLinkPage() {
                     );
                   })}
                 </div>
+                {!linkCreated && (
+                  <h2 className="mt-4 text-base font-semibold text-neutral-900">
+                    {currentStepHeading}
+                  </h2>
+                )}
               </div>
 
               <div className="mt-6 lg:mt-0 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6 xl:gap-8">
                 <div>
                   <div className="hidden lg:block">
-                    <div className="flex flex-wrap items-center gap-4">
-                      {desktopSteps.map((step, index) => {
-                        const isVisited = index < completedStep;
-                        const isInvalid = isVisited && stepHasErrors[index];
-                        const isComplete = isVisited && !stepHasErrors[index];
-                        const isCurrent = index === completedStep && !linkCreated;
-                        return (
-                          <div key={step.id} className="flex items-center gap-3">
+                    <div className="flex w-full justify-center">
+                      <div className="flex items-center">
+                        {desktopSteps.map((step, index) => {
+                          const isVisited = index < completedStep;
+                          const isInvalid = isVisited && stepHasErrors[index];
+                          const isComplete = isVisited && !isInvalid;
+                          const isCurrent = index === completedStep && !linkCreated;
+                          return (
+                            <div key={step.id} className="flex items-center gap-3">
                             <button
                               type="button"
                               onClick={() => allowStepNav && handleStepJump(index)}
                               disabled={!allowStepNav}
-                              className="flex items-center gap-3 text-left"
+                              className="flex min-w-0 items-center gap-3 text-left"
                             >
                               <span
                                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
-                                  isInvalid
-                                    ? 'border border-red-500 bg-white text-red-500'
-                                    : isComplete
-                                      ? 'bg-black text-white'
-                                      : isCurrent
-                                        ? 'border border-black bg-white text-black'
-                                        : 'border border-neutral-200 bg-white text-neutral-400'
-                                }`}
+                                  isComplete
+                                    ? 'bg-black text-white'
+                                    : isCurrent
+                                      ? 'border border-black bg-white text-black'
+                                      : 'border border-neutral-200 bg-white text-neutral-400'
+                                  }`}
                               >
-                                {isInvalid ? (
-                                  <X className="h-4 w-4" />
-                                ) : isComplete ? (
+                                {isComplete ? (
                                   <CheckIcon className="h-4 w-4" />
                                 ) : (
                                   index + 1
@@ -1198,11 +1397,9 @@ export default function CreatePaymentLinkPage() {
                               </span>
                           <span
                             className={`text-sm font-medium ${
-                              isInvalid
-                                ? 'text-red-500'
-                                : isComplete || isCurrent
-                                  ? 'text-neutral-900'
-                                  : 'text-neutral-400'
+                              isComplete || isCurrent
+                                ? 'text-neutral-900'
+                                : 'text-neutral-400'
                             }`}
                           >
                                 {step.label}
@@ -1210,18 +1407,15 @@ export default function CreatePaymentLinkPage() {
                             </button>
                             {index < desktopSteps.length - 1 && (
                               <span
-                                className={`h-px w-12 ${
-                                  index < completedStep
-                                    ? stepHasErrors[index]
-                                      ? 'bg-red-500'
-                                      : 'bg-black'
-                                    : 'bg-neutral-200'
+                                className={`h-px w-10 ${
+                                  index < completedStep ? 'bg-black' : 'bg-neutral-200'
                                 }`}
                               />
                             )}
-                          </div>
-                        );
-                      })}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -1256,16 +1450,16 @@ export default function CreatePaymentLinkPage() {
                       >
                         <div className="min-w-full space-y-6">
                           {clientDetailsSection}
-                          <div className="flex justify-end">
+                          <div>
                             <button
                               type="button"
                               onClick={() => {
                                 validateClientStep();
                                 goToMobileStep(1);
                               }}
-                              className="inline-flex h-10 items-center justify-center gap-2 border border-neutral-300 bg-white px-4 text-sm font-medium text-neutral-900 transition hover:bg-neutral-50"
+                              className="inline-flex h-10 w-full items-center justify-center gap-2 border border-black bg-black px-4 text-sm font-medium text-white transition hover:bg-neutral-900"
                             >
-                              Continue to service
+                              Continue to shoot details
                               <ArrowRightIcon className="h-4 w-4" />
                             </button>
                           </div>
@@ -1378,17 +1572,80 @@ export default function CreatePaymentLinkPage() {
                           <span>Amount</span>
                           <span className="text-neutral-900">{formatZar(serviceAmount)}</span>
                         </div>
-                        <div className="flex items-start justify-between">
-                          <span>Deliverables</span>
-                          <span className="ml-4 text-right text-neutral-900">
-                            {deliverablesPreview}
-                          </span>
-                        </div>
                         <div className="flex items-center justify-between text-neutral-400">
                           <span>Platform fee (5%)</span>
                           <span>{formatZar(platformFee)}</span>
                         </div>
                       </div>
+
+                      <div className="mt-4 border-t border-neutral-200 pt-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                          Deliverables
+                        </p>
+                        {hasDeliverables ? (
+                          <ul className="mt-2 flex flex-wrap gap-2">
+                            {deliverablesList.map((item) => (
+                              <li
+                                key={`deliverable-preview-${item}`}
+                                className="rounded-full border border-neutral-900 bg-white px-2.5 py-0.5 text-[11px] font-medium text-neutral-900"
+                              >
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="mt-2 text-xs text-neutral-400">Not specified</p>
+                        )}
+                      </div>
+
+                      {requireDeposit && (
+                        <div className="mt-4 border-t border-neutral-200 pt-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                            Payment breakdown
+                          </p>
+                          <div className="mt-3 space-y-3 text-xs text-neutral-600">
+                            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                              <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-neutral-500">
+                                <div className="flex items-center gap-2">
+                                  <span>Due now</span>
+                                  <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">
+                                    Deposit
+                                  </span>
+                                </div>
+                                <span className="font-semibold text-neutral-900">{formatZar(depositAmount)}</span>
+                              </div>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span>Platform fee (5%)</span>
+                                <span>{formatZar(depositFee)}</span>
+                              </div>
+                              <div className="mt-1 flex items-center justify-between font-semibold text-neutral-900">
+                                <span>Client pays now</span>
+                                <span>{formatZar(clientPaysNow)}</span>
+                              </div>
+                            </div>
+
+                            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                              <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-neutral-500">
+                                <div className="flex items-center gap-2">
+                                  <span>After shoot</span>
+                                  <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-[9px] font-semibold text-neutral-600">
+                                    Remainder
+                                  </span>
+                                </div>
+                                <span className="font-semibold text-neutral-900">{formatZar(remainderAmount)}</span>
+                              </div>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span>Platform fee (5%)</span>
+                                <span>{formatZar(remainderFee)}</span>
+                              </div>
+                              <div className="mt-1 flex items-center justify-between font-semibold text-neutral-900">
+                                <span>Client pays later</span>
+                                <span>{formatZar(clientPaysLater)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="mt-4 border-t border-neutral-200 pt-4">
                         <div className="flex items-end justify-between">
@@ -1472,6 +1729,7 @@ export default function CreatePaymentLinkPage() {
                   </>
                 )}
               </div>
+
             </div>
           </form>
         </div>
