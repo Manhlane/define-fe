@@ -4,11 +4,14 @@ const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 async function post(path: string, payload: unknown): Promise<void> {
   try {
-    await fetch(`${NOTIFICATIONS_BASE_URL}${path}`, {
+    const response = await fetch(`${NOTIFICATIONS_BASE_URL}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (!response.ok) {
+      throw new Error(`Notification request failed with ${response.status}`);
+    }
   } catch (error) {
     console.warn('Failed to send notification', error);
   }
@@ -48,6 +51,16 @@ export const NotificationsClient = {
     loginActivityUrl?: string;
     supportUrl?: string;
   }) => post('/auth/password-changed', payload),
+  sendPaymentLinkEmail: (payload: {
+    email: string;
+    customerName?: string;
+    paymentUrl: string;
+    serviceName: string;
+    providerName: string;
+    currency: string;
+    amount: number | string;
+    paymentReference?: string;
+  }) => post('/payments/payment-link', payload),
 };
 
 export type NotificationsClientType = typeof NotificationsClient;

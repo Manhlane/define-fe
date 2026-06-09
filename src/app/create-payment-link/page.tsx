@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { FcGoogle } from 'react-icons/fc';
 import DefineLayout from '../../components/DefineLayout';
+import { NotificationsClient } from '../../lib/notifications';
 
 type PaymentDraft = {
   amount: string;
@@ -33,25 +34,77 @@ type ContactDraft = {
   phone: string;
 };
 
+type StoredAuth = {
+  accessToken?: string;
+  userId?: string;
+  email?: string;
+  name?: string;
+  fullName?: string;
+};
+
+type StoredProfile = {
+  fullName?: string;
+  businessName?: string;
+  email?: string;
+};
+
+const shouldUseDummyPaymentLinkData = process.env.NODE_ENV !== 'production';
+
+const emptyContactDraft: ContactDraft = {
+  name: '',
+  phone: '',
+};
+
+const dummyContactDraft: ContactDraft = {
+  name: 'Thandi Mokoena',
+  phone: '71 123 4567',
+};
+
+const emptyPaymentDraft: PaymentDraft = {
+  amount: '',
+  email: '',
+  serviceDescription: '',
+  shootDate: '',
+  deliveryDate: '',
+  paymentDueBy: '',
+};
+
+const dummyPaymentDraft: PaymentDraft = {
+  amount: '8500',
+  email: 'thandi.mokoena@example.com',
+  serviceDescription: 'Wedding Photography - Full Day',
+  shootDate: '2026-07-18',
+  deliveryDate: '2026-08-01',
+  paymentDueBy: '2026-07-10',
+};
+
+const dummyDeliverables = [
+  '300 edited photos',
+  'Online gallery',
+  '10 sneak peek photos',
+  'Print-ready files',
+];
+
+const getInitialContactDraft = (): ContactDraft => ({
+  ...(shouldUseDummyPaymentLinkData ? dummyContactDraft : emptyContactDraft),
+});
+
+const getInitialPaymentDraft = (): PaymentDraft => ({
+  ...(shouldUseDummyPaymentLinkData ? dummyPaymentDraft : emptyPaymentDraft),
+});
+
+const getInitialDeliverables = () =>
+  shouldUseDummyPaymentLinkData ? [...dummyDeliverables] : [];
+
 export default function CreatePaymentLinkPage() {
   const router = useRouter();
   const [hasSession, setHasSession] = useState(false);
-  const [contactDraft, setContactDraft] = useState<ContactDraft>({
-    name: '',
-    phone: '',
-  });
+  const [contactDraft, setContactDraft] = useState<ContactDraft>(getInitialContactDraft);
   const [contactErrors, setContactErrors] = useState<{
     name?: string;
     phone?: string;
   }>({});
-  const [paymentDraft, setPaymentDraft] = useState<PaymentDraft>({
-    amount: '',
-    email: '',
-    serviceDescription: '',
-    shootDate: '',
-    deliveryDate: '',
-    paymentDueBy: '',
-  });
+  const [paymentDraft, setPaymentDraft] = useState<PaymentDraft>(getInitialPaymentDraft);
   const [paymentErrors, setPaymentErrors] = useState<{
     amount?: string;
     email?: string;
@@ -63,16 +116,21 @@ export default function CreatePaymentLinkPage() {
   }>({});
   const [mobileStep, setMobileStep] = useState(0);
   const [linkCreated, setLinkCreated] = useState(false);
+  const [intentPublicId, setIntentPublicId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [deliverablesList, setDeliverablesList] = useState<string[]>([]);
+  const [deliverablesList, setDeliverablesList] = useState<string[]>(getInitialDeliverables);
   const [deliverableInput, setDeliverableInput] = useState('');
-  const [requireDeposit, setRequireDeposit] = useState(false);
+  const [requireDeposit, setRequireDeposit] = useState(shouldUseDummyPaymentLinkData);
   const [depositMode, setDepositMode] = useState<'percent' | 'fixed'>('percent');
   const [depositPercent, setDepositPercent] = useState(50);
-  const [depositFixed, setDepositFixed] = useState('');
+  const [depositFixed, setDepositFixed] = useState(
+    shouldUseDummyPaymentLinkData ? '4250' : '',
+  );
   const [showStepperErrors, setShowStepperErrors] = useState(false);
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [authGateLoading, setAuthGateLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const authGateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shootDateRef = useRef<HTMLInputElement | null>(null);
   const deliveryDateRef = useRef<HTMLInputElement | null>(null);
@@ -150,8 +208,11 @@ export default function CreatePaymentLinkPage() {
   };
   const exitPath = hasSession ? '/home' : '/welcome-to-dfn';
   const PAYMENT_REQUESTS_KEY = 'define.paymentRequests';
-  const previewLink = draftId
-    ? `${linkBase}/payment/${draftId}`
+  const PAYMENTS_BASE_URL =
+    process.env.NEXT_PUBLIC_PAYMENTS_URL ?? 'http://localhost:3004';
+  const effectiveLinkId = intentPublicId ?? draftId;
+  const previewLink = effectiveLinkId
+    ? `${linkBase}/payment/${effectiveLinkId}`
     : `${linkBase}/payment/XXXXXX`;
   const serviceLabel = paymentDraft.serviceDescription.trim() || 'Service';
   const clientNamePreview = contactDraft.name.trim() || 'Client name';
@@ -219,7 +280,41 @@ export default function CreatePaymentLinkPage() {
     };
   }, []);
 
-  function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const getStoredAuth = () => {
+    if (typeof window === 'undefined') return null;
+    const stored = window.localStorage.getItem('define.auth');
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as StoredAuth;
+    } catch {
+      return null;
+    }
+  };
+
+  const getStoredProfile = () => {
+    if (typeof window === 'undefined') return null;
+    const stored = window.localStorage.getItem('define.profile');
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as StoredProfile;
+    } catch {
+      return null;
+    }
+  };
+
+  const getProviderName = (auth: StoredAuth | null) => {
+    const profile = getStoredProfile();
+    return (
+      profile?.businessName?.trim() ||
+      profile?.fullName?.trim() ||
+      auth?.fullName?.trim() ||
+      auth?.name?.trim() ||
+      auth?.email?.trim() ||
+      'Your service provider'
+    );
+  };
+
+  async function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const isValid = validateForm();
@@ -227,6 +322,8 @@ export default function CreatePaymentLinkPage() {
       setShowStepperErrors(true);
       return;
     }
+
+    setSubmitError(null);
 
     if (!hasSession) {
       if (authGateLoading || authGateOpen) {
@@ -243,7 +340,7 @@ export default function CreatePaymentLinkPage() {
       return;
     }
 
-    finalizePaymentLink();
+    await finalizePaymentLink();
   }
 
   const normalizePhoneDigits = (value: string) => {
@@ -385,22 +482,30 @@ export default function CreatePaymentLinkPage() {
   };
 
 
-  function persistPaymentRequest() {
+  function persistPaymentRequest(overrides?: {
+    id?: string;
+    link?: string;
+    amount?: number;
+    clientName?: string;
+    clientEmail?: string;
+    serviceDescription?: string;
+    status?: string;
+  }) {
     if (typeof window === 'undefined') {
       return;
     }
-    const id = draftId;
-    const link = previewLink;
+    const id = overrides?.id ?? draftId;
+    const link = overrides?.link ?? previewLink;
     const createdAt = new Date().toISOString();
     const newRequest = {
       id,
       link,
-      amount: serviceAmount,
-      clientName: contactDraft.name.trim(),
-      clientEmail: paymentDraft.email.trim(),
-      serviceDescription: paymentDraft.serviceDescription.trim(),
+      amount: overrides?.amount ?? serviceAmount,
+      clientName: overrides?.clientName ?? contactDraft.name.trim(),
+      clientEmail: overrides?.clientEmail ?? paymentDraft.email.trim(),
+      serviceDescription: overrides?.serviceDescription ?? paymentDraft.serviceDescription.trim(),
       createdAt,
-      status: 'Pending',
+      status: overrides?.status ?? 'Pending',
     };
 
     try {
@@ -415,16 +520,115 @@ export default function CreatePaymentLinkPage() {
     }
   }
 
-  function finalizePaymentLink() {
-    if (linkCreated) return;
+  async function finalizePaymentLink() {
+    if (linkCreated || isSubmitting) return;
     if (!draftId) {
       setDraftId(createDraftId());
       return;
     }
     if (!validateForm()) return;
-    persistPaymentRequest();
-    setLinkCreated(true);
-    setMobileStep(maxMobileStep);
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const auth = getStoredAuth();
+    const accessToken = auth?.accessToken;
+    const userId = auth?.userId;
+
+    const normalizedPhone = normalizePhoneDigits(contactDraft.phone.trim());
+    const phoneCore = normalizedPhone.startsWith('0')
+      ? normalizedPhone.slice(1)
+      : normalizedPhone;
+    const clientPhone = phoneCore ? `+27${phoneCore}` : contactDraft.phone.trim();
+
+    const payload: Record<string, unknown> = {
+      userId,
+      clientName: contactDraft.name.trim(),
+      clientEmail: paymentDraft.email.trim(),
+      clientPhone,
+      serviceDescription: paymentDraft.serviceDescription.trim(),
+      shootDate: paymentDraft.shootDate,
+      deliveryDate: paymentDraft.deliveryDate,
+      currency: 'ZAR',
+      totalAmount: serviceAmount,
+      requireDeposit,
+    };
+
+    if (requireDeposit) {
+      payload.depositType = depositMode === 'percent' ? 'percentage' : 'fixed';
+      payload.depositValue =
+        depositMode === 'percent'
+          ? depositPercentValue
+          : Number.isFinite(depositFixedValue)
+            ? depositFixedValue
+            : 0;
+    }
+
+    if (deliverablesList.length > 0) {
+      payload.deliverables = deliverablesList.map((item) => ({
+        title: item.trim(),
+        type: 'custom',
+        quantity: 1,
+      }));
+    }
+
+    try {
+      const response = await fetch(
+        `${PAYMENTS_BASE_URL.replace(/\/$/, '')}/payment-intents`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const body = (await response.json().catch(() => null)) as
+        | { publicId?: string; id?: string; message?: string | string[] }
+        | null;
+
+      if (!response.ok) {
+        const serverMessage = Array.isArray(body?.message)
+          ? body?.message.join(' ')
+          : body?.message;
+        const message =
+          serverMessage ||
+          'Unable to create a payment link right now. Please try again.';
+        setSubmitError(message);
+        return;
+      }
+
+      const publicId = body?.publicId ?? body?.id ?? draftId;
+      const link = `${linkBase}/payment/${publicId}`;
+      await NotificationsClient.sendPaymentLinkEmail({
+        email: paymentDraft.email.trim(),
+        customerName: contactDraft.name.trim(),
+        paymentUrl: link,
+        serviceName: paymentDraft.serviceDescription.trim(),
+        providerName: getProviderName(auth),
+        currency: 'ZAR',
+        amount: serviceAmount,
+        paymentReference: publicId,
+      });
+      setIntentPublicId(publicId);
+      persistPaymentRequest({
+        id: publicId,
+        link,
+        amount: serviceAmount,
+        clientName: contactDraft.name.trim(),
+        clientEmail: paymentDraft.email.trim(),
+        serviceDescription: paymentDraft.serviceDescription.trim(),
+        status: 'Pending',
+      });
+      setLinkCreated(true);
+      setMobileStep(maxMobileStep);
+    } catch {
+      setSubmitError('Network error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleCopyLink() {
@@ -445,26 +649,22 @@ export default function CreatePaymentLinkPage() {
   }
 
   function resetDraft() {
-    setContactDraft({ name: '', phone: '' });
+    setContactDraft(getInitialContactDraft());
     setContactErrors({});
-    setPaymentDraft({
-      amount: '',
-      email: '',
-      serviceDescription: '',
-      shootDate: '',
-      deliveryDate: '',
-      paymentDueBy: '',
-    });
+    setPaymentDraft(getInitialPaymentDraft());
     setPaymentErrors({});
-    setDeliverablesList([]);
+    setDeliverablesList(getInitialDeliverables());
     setDeliverableInput('');
-    setRequireDeposit(false);
+    setRequireDeposit(shouldUseDummyPaymentLinkData);
     setDepositMode('percent');
     setDepositPercent(50);
-    setDepositFixed('');
+    setDepositFixed(shouldUseDummyPaymentLinkData ? '4250' : '');
     setMobileStep(0);
     setLinkCreated(false);
     setCopied(false);
+    setIntentPublicId(null);
+    setSubmitError(null);
+    setIsSubmitting(false);
     setDraftId(createDraftId());
   }
 
@@ -1254,6 +1454,12 @@ export default function CreatePaymentLinkPage() {
     'Tell us about the shoot',
     'How much do you charge',
   ];
+  const isSubmitLoading = authGateLoading || isSubmitting;
+  const submitLabel = authGateLoading
+    ? 'Preparing…'
+    : isSubmitting
+      ? 'Creating…'
+      : 'Create payment link';
 
   const maxMobileStep = mobileSlides.length - 1;
   const isLastMobileStep = mobileStep === maxMobileStep;
@@ -1490,6 +1696,12 @@ export default function CreatePaymentLinkPage() {
                         </div>
                         <div className="min-w-full space-y-6">
                           {paymentDetailsSection}
+                          {submitError && (
+                            <p className="flex items-center gap-1 text-xs leading-4 text-red-600">
+                              <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                              {submitError}
+                            </p>
+                          )}
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
@@ -1501,17 +1713,17 @@ export default function CreatePaymentLinkPage() {
                             </button>
                             <button
                               type="submit"
-                              disabled={authGateLoading}
+                              disabled={isSubmitLoading}
                               className="inline-flex h-10 flex-1 items-center justify-center gap-2 border border-black bg-black px-4 text-sm font-medium text-white transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                              {authGateLoading ? (
+                              {isSubmitLoading ? (
                                 <span className="flex items-center justify-center gap-2">
                                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-400/40 border-t-neutral-900" />
-                                  Preparing…
+                                  {submitLabel}
                                 </span>
                               ) : (
                                 <span className="flex items-center justify-center gap-2">
-                                  Create payment link
+                                  {submitLabel}
                                   <ArrowRightIcon className="h-4 w-4" />
                                 </span>
                               )}
@@ -1670,6 +1882,12 @@ export default function CreatePaymentLinkPage() {
               <div className="mt-6 lg:hidden">
                 {!linkCreated && (
                   <>
+                    {submitError && (
+                      <p className="mb-3 flex items-center gap-1 text-xs leading-4 text-red-600">
+                        <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
+                        {submitError}
+                      </p>
+                    )}
                     {mobileStep === 0 ? (
                       <button
                         type="button"
@@ -1702,18 +1920,18 @@ export default function CreatePaymentLinkPage() {
                                   goToMobileStep(mobileStep + 1);
                                 }
                           }
-                          disabled={isLastMobileStep && authGateLoading}
+                          disabled={isLastMobileStep && isSubmitLoading}
                           className="inline-flex h-11 flex-1 items-center justify-center gap-2 border border-black bg-black text-sm font-semibold text-white transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
                         >
                           {isLastMobileStep ? (
-                            authGateLoading ? (
+                            isSubmitLoading ? (
                               <span className="flex items-center justify-center gap-2">
                                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-400/40 border-t-neutral-900" />
-                                Preparing…
+                                {submitLabel}
                               </span>
                             ) : (
                               <span className="flex items-center justify-center gap-2">
-                                Create payment link
+                                {submitLabel}
                                 <ArrowRightIcon className="h-4 w-4" />
                               </span>
                             )

@@ -135,10 +135,6 @@ export default function MobileAuthPageClient() {
 
       if (!res.ok || !body?.accessToken) {
         const errorMessage = body?.message || 'Email or password invalid. Please try again.';
-        loginForm.setError('email', {
-          type: 'server',
-          message: errorMessage,
-        });
         setNetworkErrorMessage(errorMessage);
         return;
       }
@@ -155,10 +151,6 @@ export default function MobileAuthPageClient() {
       );
       router.push('/home');
     } catch {
-      loginForm.setError('email', {
-        type: 'server',
-        message: 'Network error. Please try again.',
-      });
       setNetworkErrorMessage('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -276,7 +268,7 @@ export default function MobileAuthPageClient() {
               </div>
 
               {resetSent && (
-                <div className="flex items-center gap-2 border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
                   <CheckCircleIcon className="h-5 w-5" />
                   <span>If this email exists, we&apos;ll send a reset link shortly.</span>
                 </div>
@@ -400,7 +392,7 @@ export default function MobileAuthPageClient() {
                 </div>
 
                 {mode === 'login' && networkErrorMessage && (
-                  <div className="flex items-center justify-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-center text-sm text-red-700">
+                  <div className="flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-center text-sm text-red-700">
                     <ExclamationTriangleIcon className="h-4 w-4 text-red-600" />
                     <span>{networkErrorMessage}</span>
                   </div>

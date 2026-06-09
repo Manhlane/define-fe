@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import {
   ArrowPathIcon,
   CheckCircleIcon,
+  EnvelopeIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   PencilSquareIcon,
@@ -321,9 +322,16 @@ function ProfilePageContent() {
     setVerificationSending(true);
     setFeedback(null);
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (session?.accessToken) {
+        headers.Authorization = `Bearer ${session.accessToken}`;
+      }
+
       const res = await fetch(RESEND_VERIFICATION_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ email: targetEmail }),
       });
 
@@ -537,12 +545,14 @@ function ProfilePageContent() {
                   Email verified
                 </div>
               ) : (
-                <div className="mt-3 flex flex-col gap-3 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-3 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-2">
-                    <ExclamationTriangleIcon className="mt-0.5 h-5 w-5" />
+                    <EnvelopeIcon className="mt-0.5 h-5 w-5" />
                     <div>
-                      <p>Email not verified</p>
-                      <p className="text-xs text-red-700">Check your inbox for the verification link.</p>
+                      <p>Verify your email</p>
+                      <p className="text-xs text-red-700">
+                        Check your inbox and click the verification link to activate your account.
+                      </p>
                     </div>
                   </div>
                   <button
@@ -551,7 +561,7 @@ function ProfilePageContent() {
                     disabled={verificationSending}
                     className="w-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
-                    {verificationSending ? 'Sending…' : 'Resend email'}
+                    {verificationSending ? 'Sending…' : 'Resend verification email'}
                   </button>
                 </div>
               )}
@@ -614,7 +624,7 @@ function ProfilePageContent() {
               </div>
             </div>
 
-            <div className="mt-5 flex items-start gap-2 border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            <div className="mt-5 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
               <InformationCircleIcon className="mt-0.5 h-5 w-5" />
               <p>
                 Your bank details are encrypted and secure. Payments will be transferred to this account after
