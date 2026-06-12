@@ -33,10 +33,49 @@ type ProfileData = ProfileFormValues & {
 type ProfileFeedback = { type: 'success' | 'error'; message: string } | null;
 type ApiMessage = { message?: string };
 type VerificationPayload = ApiMessage & { verificationToken?: string };
+type StoredAuth = {
+  accessToken?: string;
+  refreshToken?: string;
+  userId?: string;
+  email?: string;
+  name?: string;
+  fullName?: string;
+  businessName?: string | null;
+  isVerified?: boolean;
+};
+type StoredProfile = Partial<ProfileData>;
+type AuthProfileResponse = {
+  id?: string;
+  email?: string;
+  name?: string;
+  businessName?: string | null;
+  phone?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  accountType?: string | null;
+  avatarUrl?: string | null;
+  isVerified?: boolean;
+};
 
 const AUTH_BASE_URL =
   process.env.NEXT_PUBLIC_AUTH_URL ?? 'http://34.251.72.37:3000/auth';
 const RESEND_VERIFICATION_URL = `${AUTH_BASE_URL}/resend-verification`;
+const PROFILE_URL = `${AUTH_BASE_URL}/profile`;
+const AUTH_STORAGE_KEY = 'define.auth';
+const PROFILE_STORAGE_KEY = 'define.profile';
+
+const EMPTY_PROFILE: ProfileData = {
+  id: '',
+  fullName: '',
+  businessName: '',
+  email: '',
+  phone: '',
+  verificationStatus: 'pending',
+  bankName: '',
+  accountNumber: '',
+  accountType: '',
+  avatarUrl: null,
+};
 
 function mapProfileToForm(profile: ProfileData): ProfileFormValues {
   return {
@@ -66,46 +105,167 @@ async function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
-const MOCK_PROFILE: ProfileData = {
-  id: 'user-001',
-  fullName: 'Manhlane Mamabolo',
-  businessName: 'Manhlane Photography',
-  email: 'mamabolo.m32@gmail.com',
-  phone: '+27 71 123 4567',
-  verificationStatus: 'pending',
-  bankName: '',
-  accountNumber: '',
-  accountType: '',
-  avatarUrl: null,
-};
-
-async function fetchProfileStub(): Promise<ProfileData> {
-  await delay(400);
-  return { ...MOCK_PROFILE };
-}
-
-async function updateProfileStub(payload: ProfileData): Promise<ProfileData> {
-  await delay(600);
-  return { ...payload };
-}
-
 async function uploadAvatarStub(file: File): Promise<string> {
   const dataUrl = await readFileAsDataUrl(file);
   await delay(350);
   return dataUrl;
 }
 
+function readStorageJson<T>(key: string): T | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeEmail(email?: string | null): string {
+  return email?.trim().toLowerCase() ?? '';
+}
+
+function isStoredProfileForAuthUser(profile: StoredProfile | null, authEmail?: string): boolean {
+  if (!profile) return false;
+  const normalizedAuthEmail = normalizeEmail(authEmail);
+  const normalizedProfileEmail = normalizeEmail(profile.email);
+
+  return !normalizedAuthEmail || !normalizedProfileEmail || normalizedAuthEmail === normalizedProfileEmail;
+}
+
+async function fetchCurrentUser(accessToken?: string): Promise<AuthProfileResponse | null> {
+  if (!accessToken) return null;
+
+  try {
+    const response = await fetch(PROFILE_URL, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!response.ok) return null;
+    return (await response.json().catch(() => null)) as AuthProfileResponse | null;
+  } catch {
+    return null;
+  }
+}
+
+function buildProfile(
+  storedProfile: StoredProfile | null,
+  storedAuth: StoredAuth | null,
+  authProfile: AuthProfileResponse | null,
+): ProfileData {
+  const authEmail = authProfile?.email ?? storedAuth?.email ?? '';
+  const shouldUseStoredProfile = isStoredProfileForAuthUser(storedProfile, authEmail);
+  const saved = shouldUseStoredProfile ? storedProfile : null;
+  const fullName = saved?.fullName ?? authProfile?.name ?? storedAuth?.fullName ?? storedAuth?.name ?? '';
+  const email = authEmail || saved?.email || '';
+  const isVerified = authProfile?.isVerified ?? storedAuth?.isVerified ?? false;
+  const businessName =
+    authProfile !== null && authProfile.businessName !== undefined
+      ? authProfile.businessName ?? ''
+      : (saved?.businessName ?? storedAuth?.businessName ?? '');
+  const phone =
+    authProfile !== null && authProfile.phone !== undefined
+      ? authProfile.phone ?? ''
+      : (saved?.phone ?? '');
+  const bankName =
+    authProfile !== null && authProfile.bankName !== undefined
+      ? authProfile.bankName ?? ''
+      : (saved?.bankName ?? '');
+  const accountNumber =
+    authProfile !== null && authProfile.accountNumber !== undefined
+      ? authProfile.accountNumber ?? ''
+      : (saved?.accountNumber ?? '');
+  const accountType =
+    authProfile !== null && authProfile.accountType !== undefined
+      ? authProfile.accountType ?? ''
+      : (saved?.accountType ?? '');
+  const avatarUrl =
+    authProfile !== null && authProfile.avatarUrl !== undefined
+      ? authProfile.avatarUrl ?? null
+      : (saved?.avatarUrl ?? null);
+
+  return {
+    ...EMPTY_PROFILE,
+    ...saved,
+    id: authProfile?.id ?? storedAuth?.userId ?? saved?.id ?? '',
+    fullName,
+    businessName,
+    email,
+    phone,
+    bankName,
+    accountNumber,
+    accountType,
+    verificationStatus: isVerified ? 'verified' : saved?.verificationStatus ?? 'pending',
+    avatarUrl,
+  };
+}
+
+async function updateProfile(
+  accessToken: string | undefined,
+  currentProfile: ProfileData,
+  values: ProfileFormValues,
+  avatarUrl: string | null,
+): Promise<ProfileData> {
+  if (!accessToken) {
+    throw new Error('Please sign in again before updating your profile.');
+  }
+
+  const response = await fetch(PROFILE_URL, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      email: values.email.trim(),
+      name: values.fullName.trim(),
+      businessName: values.businessName.trim() || null,
+      phone: values.phone.trim() || null,
+      bankName: values.bankName.trim() || null,
+      accountNumber: values.accountNumber.trim() || null,
+      accountType: values.accountType.trim() || null,
+      avatarUrl: avatarUrl || null,
+    }),
+  });
+  const authProfile = (await response.json().catch(() => null)) as
+    | (AuthProfileResponse & { message?: string })
+    | null;
+
+  if (!response.ok || !authProfile) {
+    throw new Error(authProfile?.message || 'Failed to update profile.');
+  }
+
+  return {
+    ...currentProfile,
+    ...values,
+    id: authProfile.id ?? currentProfile.id,
+    fullName: authProfile.name ?? values.fullName,
+    businessName: authProfile.businessName ?? '',
+    email: authProfile.email ?? values.email,
+    phone: authProfile.phone ?? '',
+    bankName: authProfile.bankName ?? '',
+    accountNumber: authProfile.accountNumber ?? '',
+    accountType: authProfile.accountType ?? '',
+    verificationStatus: authProfile.isVerified ? 'verified' : values.verificationStatus,
+    avatarUrl: authProfile.avatarUrl ?? null,
+  };
+}
+
+function persistAuthToStorage(auth: StoredAuth) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+}
+
 function persistProfileToStorage(profile: ProfileData) {
   if (typeof window === 'undefined') {
     return;
   }
-  const payload = {
-    fullName: profile.fullName,
-    businessName: profile.businessName,
-    email: profile.email,
-    avatarUrl: profile.avatarUrl,
-  };
-  window.localStorage.setItem('define.profile', JSON.stringify(payload));
+  window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
 }
 
 function ProfilePageContent() {
@@ -157,27 +317,45 @@ function ProfilePageContent() {
   const [feedback, setFeedback] = useState<ProfileFeedback>(null);
   const [verificationSending, setVerificationSending] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [session, setSession] = useState<{ accessToken?: string; email?: string; name?: string } | null>(null);
+  const [session, setSession] = useState<StoredAuth | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isActive = true;
 
     async function loadProfile() {
-      try {
-        const data = await fetchProfileStub();
-        if (!isActive) {
-          return;
-        }
-        setProfile(data);
-        setAvatarUrl(data.avatarUrl);
-        persistProfileToStorage(data);
-        reset(mapProfileToForm(data));
-      } catch {
-        if (isActive) {
-          setFeedback({ type: 'error', message: 'Failed to load profile. Please refresh.' });
-        }
+      const storedAuth = readStorageJson<StoredAuth>(AUTH_STORAGE_KEY);
+      const storedProfile = readStorageJson<StoredProfile>(PROFILE_STORAGE_KEY);
+      const authProfile = await fetchCurrentUser(storedAuth?.accessToken);
+
+      if (!isActive) {
+        return;
       }
+
+      const nextSession: StoredAuth | null =
+        storedAuth || authProfile
+          ? {
+              ...storedAuth,
+              userId: authProfile?.id ?? storedAuth?.userId,
+              email: authProfile?.email ?? storedAuth?.email,
+              name: authProfile?.name ?? storedAuth?.name ?? storedAuth?.fullName,
+              businessName:
+                authProfile !== null && authProfile.businessName !== undefined
+                  ? authProfile.businessName ?? null
+                  : (storedAuth?.businessName ?? null),
+              isVerified: authProfile?.isVerified ?? storedAuth?.isVerified,
+            }
+          : null;
+      const nextProfile = buildProfile(storedProfile, storedAuth, authProfile);
+
+      setSession(nextSession);
+      if (nextSession?.accessToken) {
+        persistAuthToStorage(nextSession);
+      }
+      setProfile(nextProfile);
+      setAvatarUrl(nextProfile.avatarUrl);
+      persistProfileToStorage(nextProfile);
+      reset(mapProfileToForm(nextProfile));
     }
 
     void loadProfile();
@@ -186,23 +364,6 @@ function ProfilePageContent() {
       isActive = false;
     };
   }, [reset]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    try {
-      const raw = window.localStorage.getItem('define.auth');
-      if (!raw) {
-        setSession(null);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      setSession(parsed);
-    } catch {
-      setSession(null);
-    }
-  }, []);
 
   const initials = useMemo(() => {
     if (!fullName) {
@@ -259,19 +420,29 @@ function ProfilePageContent() {
     setSaving(true);
     setFeedback(null);
     try {
-      const nextProfile = await updateProfileStub({
-        ...profile,
-        ...values,
-        avatarUrl,
-      });
+      const nextProfile = await updateProfile(session?.accessToken, profile, values, avatarUrl);
       setProfile(nextProfile);
       setAvatarUrl(nextProfile.avatarUrl);
       setAvatarDirty(false);
       persistProfileToStorage(nextProfile);
+      if (session) {
+        const nextSession = {
+          ...session,
+          email: nextProfile.email,
+          name: nextProfile.fullName,
+          businessName: nextProfile.businessName || null,
+          isVerified: nextProfile.verificationStatus === 'verified',
+        };
+        setSession(nextSession);
+        persistAuthToStorage(nextSession);
+      }
       reset(mapProfileToForm(nextProfile));
       setFeedback({ type: 'success', message: 'Profile updated successfully.' });
-    } catch {
-      setFeedback({ type: 'error', message: 'Failed to save profile. Please try again.' });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to save profile. Please try again.',
+      });
     } finally {
       setSaving(false);
     }

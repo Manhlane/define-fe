@@ -74,10 +74,22 @@ const formatDate = (value?: string | null) => {
   });
 };
 
+const formatProviderName = (provider?: string) => {
+  const raw = provider?.trim();
+  if (!raw) return '';
+
+  return raw
+    .replace(/^@/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export default function PaymentLinkPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const intentId = typeof params?.id === 'string' ? params.id : '';
+  const providerHandle = typeof params?.provider === 'string' ? params.provider : '';
+  const providerName = useMemo(() => formatProviderName(providerHandle), [providerHandle]);
 
   const [intent, setIntent] = useState<PaymentIntent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +98,11 @@ export default function PaymentLinkPage() {
   const [payingScheduleId, setPayingScheduleId] = useState<string | null>(null);
 
   const fetchIntent = () =>
-    fetch(`${PAYMENTS_BASE_URL.replace(/\/$/, '')}/payment-intents/${intentId}`)
+    fetch(
+      `${PAYMENTS_BASE_URL.replace(/\/$/, '')}/payment-intents/${encodeURIComponent(
+        intentId,
+      )}`,
+    )
       .then(async (res) => {
         const body = (await res.json().catch(() => null)) as PaymentIntent | null;
         if (!res.ok || !body) {
@@ -228,6 +244,12 @@ export default function PaymentLinkPage() {
             {intent.serviceDescription}
           </h1>
           <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
+            {providerName && (
+              <>
+                <span>Provider: {providerName}</span>
+                <span className="h-1 w-1 rounded-full bg-neutral-300" />
+              </>
+            )}
             <span>Client: {intent.clientName}</span>
             <span className="h-1 w-1 rounded-full bg-neutral-300" />
             <span>Status: {statusLabel}</span>
@@ -427,6 +449,11 @@ export default function PaymentLinkPage() {
                   ? 'Split into deposit and remainder payments.'
                   : 'Single payment required.'}
               </div>
+              {providerName && (
+                <div className="mt-4 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
+                  You are paying {providerName}.
+                </div>
+              )}
               <div className="mt-4 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
                 Payment reference: {intent.slug ?? intent.publicId}
               </div>

@@ -116,6 +116,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     } finally {
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(STORAGE_KEY);
+        window.localStorage.removeItem('define.profile');
       }
     }
 

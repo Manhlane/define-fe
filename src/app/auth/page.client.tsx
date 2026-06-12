@@ -37,6 +37,8 @@ type LoginResponse = {
   accessToken?: string;
   refreshToken?: string;
   userId?: string;
+  name?: string;
+  businessName?: string | null;
   isVerified?: boolean;
 };
 
@@ -146,6 +148,8 @@ export default function MobileAuthPageClient() {
           refreshToken: body.refreshToken,
           userId: body.userId,
           email: values.email.trim().toLowerCase(),
+          name: body.name,
+          businessName: body.businessName ?? null,
           isVerified: body.isVerified,
         })
       );

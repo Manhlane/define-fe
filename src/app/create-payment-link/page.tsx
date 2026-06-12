@@ -40,11 +40,12 @@ type StoredAuth = {
   email?: string;
   name?: string;
   fullName?: string;
+  businessName?: string | null;
 };
 
 type StoredProfile = {
   fullName?: string;
-  businessName?: string;
+  businessName?: string | null;
   email?: string;
 };
 
@@ -307,6 +308,7 @@ export default function CreatePaymentLinkPage() {
     const profile = getStoredProfile();
     return (
       profile?.businessName?.trim() ||
+      auth?.businessName?.trim() ||
       profile?.fullName?.trim() ||
       auth?.fullName?.trim() ||
       auth?.name?.trim() ||
