@@ -71,7 +71,7 @@ const emptyPaymentDraft: PaymentDraft = {
 
 const dummyPaymentDraft: PaymentDraft = {
   amount: '8500',
-  email: 'thandi.mokoena@example.com',
+  email: 'mamabolo.m32@gmail.com',
   serviceDescription: 'Wedding Photography - Full Day',
   shootDate: '2026-07-18',
   deliveryDate: '2026-08-01',
@@ -116,7 +116,8 @@ export default function CreatePaymentLinkPage() {
   }>({});
   const [mobileStep, setMobileStep] = useState(0);
   const [linkCreated, setLinkCreated] = useState(false);
-  const [intentPublicId, setIntentPublicId] = useState<string | null>(null);
+  const [intentSlug, setIntentSlug] = useState<string | null>(null);
+  const [intentProviderHandle, setIntentProviderHandle] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [deliverablesList, setDeliverablesList] = useState<string[]>(getInitialDeliverables);
   const [deliverableInput, setDeliverableInput] = useState('');
@@ -210,10 +211,10 @@ export default function CreatePaymentLinkPage() {
   const PAYMENT_REQUESTS_KEY = 'define.paymentRequests';
   const PAYMENTS_BASE_URL =
     process.env.NEXT_PUBLIC_PAYMENTS_URL ?? 'http://localhost:3004';
-  const effectiveLinkId = intentPublicId ?? draftId;
-  const previewLink = effectiveLinkId
-    ? `${linkBase}/payment/${effectiveLinkId}`
-    : `${linkBase}/payment/XXXXXX`;
+  const effectiveProviderHandle =
+    intentProviderHandle ??
+    (shouldUseDummyPaymentLinkData ? '@manhlane-mamabolo' : '@service-provider');
+  const previewLink = `${linkBase}/pay/${effectiveProviderHandle}/${intentSlug ?? 'XXXXXX'}`;
   const serviceLabel = paymentDraft.serviceDescription.trim() || 'Service';
   const clientNamePreview = contactDraft.name.trim() || 'Client name';
   const clientEmailPreview = paymentDraft.email.trim() || 'client@email.com';
@@ -312,6 +313,18 @@ export default function CreatePaymentLinkPage() {
       auth?.email?.trim() ||
       'Your service provider'
     );
+  };
+
+  const getProviderHandle = (name: string) => {
+    const normalized = name
+      .trim()
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    return `@${normalized || 'service-provider'}`;
   };
 
   async function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -586,7 +599,12 @@ export default function CreatePaymentLinkPage() {
       );
 
       const body = (await response.json().catch(() => null)) as
-        | { publicId?: string; id?: string; message?: string | string[] }
+        | {
+            publicId?: string;
+            slug?: string;
+            id?: string;
+            message?: string | string[];
+          }
         | null;
 
       if (!response.ok) {
@@ -600,21 +618,35 @@ export default function CreatePaymentLinkPage() {
         return;
       }
 
-      const publicId = body?.publicId ?? body?.id ?? draftId;
-      const link = `${linkBase}/payment/${publicId}`;
+      const slug = body?.slug ?? body?.publicId ?? body?.id ?? draftId;
+      const providerName = getProviderName(auth);
+      const providerHandle = getProviderHandle(providerName);
+      const link = `${linkBase}/pay/${providerHandle}/${slug}`;
       await NotificationsClient.sendPaymentLinkEmail({
         email: paymentDraft.email.trim(),
         customerName: contactDraft.name.trim(),
         paymentUrl: link,
         serviceName: paymentDraft.serviceDescription.trim(),
-        providerName: getProviderName(auth),
+        providerName,
         currency: 'ZAR',
         amount: serviceAmount,
-        paymentReference: publicId,
+        paymentReference: slug,
       });
-      setIntentPublicId(publicId);
+      if (auth?.email) {
+        await NotificationsClient.sendProviderBookingRequestEmail({
+          email: auth.email,
+          providerName,
+          serviceName: paymentDraft.serviceDescription.trim(),
+          customerName: contactDraft.name.trim(),
+          currency: 'ZAR',
+          amount: serviceAmount,
+          paymentReference: slug,
+        });
+      }
+      setIntentSlug(slug);
+      setIntentProviderHandle(providerHandle);
       persistPaymentRequest({
-        id: publicId,
+        id: slug,
         link,
         amount: serviceAmount,
         clientName: contactDraft.name.trim(),
@@ -662,7 +694,8 @@ export default function CreatePaymentLinkPage() {
     setMobileStep(0);
     setLinkCreated(false);
     setCopied(false);
-    setIntentPublicId(null);
+    setIntentSlug(null);
+    setIntentProviderHandle(null);
     setSubmitError(null);
     setIsSubmitting(false);
     setDraftId(createDraftId());

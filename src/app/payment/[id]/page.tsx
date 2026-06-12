@@ -26,6 +26,7 @@ type PaymentSchedule = {
 type PaymentIntent = {
   id: string;
   publicId: string;
+  slug?: string;
   userId: string;
   clientName: string;
   clientEmail: string;
@@ -133,11 +134,11 @@ export default function PaymentLinkPage() {
   );
 
   const paymentReference =
-    searchParams.get('reference') ||
-    searchParams.get('trxref') ||
-    searchParams.get('payment_reference') ||
+    searchParams?.get('reference') ||
+    searchParams?.get('trxref') ||
+    searchParams?.get('payment_reference') ||
     '';
-  const paymentStatus = searchParams.get('status') || '';
+  const paymentStatus = searchParams?.get('status') || '';
   const showConfirmation =
     paymentStatus.toLowerCase() === 'success' || Boolean(paymentReference);
 
@@ -427,7 +428,7 @@ export default function PaymentLinkPage() {
                   : 'Single payment required.'}
               </div>
               <div className="mt-4 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
-                Payment reference: {intent.publicId}
+                Payment reference: {intent.slug ?? intent.publicId}
               </div>
             </div>
 

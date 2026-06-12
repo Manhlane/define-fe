@@ -61,6 +61,15 @@ export const NotificationsClient = {
     amount: number | string;
     paymentReference?: string;
   }) => post('/payments/payment-link', payload),
+  sendProviderBookingRequestEmail: (payload: {
+    email: string;
+    providerName?: string;
+    serviceName: string;
+    customerName: string;
+    currency: string;
+    amount: number | string;
+    paymentReference: string;
+  }) => post('/payments/provider-booking-request', payload),
 };
 
 export type NotificationsClientType = typeof NotificationsClient;
