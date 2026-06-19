@@ -2,10 +2,10 @@ import React from "react";
 
 export default function PrivacyPolicyV1() {
   return (
-    <div className="min-h-screen bg-white text-gray-800 px-6 py-12">
+    <div className="theme-midnight min-h-screen bg-[var(--app-bg)] px-6 py-12 text-[var(--app-foreground)]">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
-        <p className="text-sm text-gray-500 mb-8">
+        <h1 className="mb-4 text-4xl font-bold text-[var(--app-foreground-strong)]">Privacy Policy</h1>
+        <p className="mb-8 text-sm text-[var(--app-muted)]">
           Effective Date: 19 February 2026 <br />
           Version: 1.0.0
         </p>

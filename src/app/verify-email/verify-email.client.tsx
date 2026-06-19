@@ -82,7 +82,7 @@ export default function VerifyEmailClient() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-[100dvh] bg-white text-black">
+      <div className="theme-midnight min-h-[100dvh] bg-white text-black">
         <div className="flex items-center px-6 pt-12">
           <div className="text-4xl font-semibold tracking-tight text-black">dfn!.</div>
         </div>
@@ -103,7 +103,7 @@ export default function VerifyEmailClient() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-white text-black">
+    <div className="theme-midnight min-h-[100dvh] bg-white text-black">
       <div className="flex items-center px-6 pt-12">
         <div className="text-4xl font-semibold tracking-tight text-black">dfn!.</div>
       </div>

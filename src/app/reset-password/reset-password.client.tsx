@@ -98,7 +98,7 @@ export default function ResetPasswordClient() {
     ) : null;
 
   return (
-    <div className="min-h-[100dvh] bg-white text-black">
+    <div className="theme-midnight min-h-[100dvh] bg-white text-black">
       <div className="flex items-center justify-between px-6 pt-12">
         <div className="text-xl font-semibold tracking-tight text-black">dfn!.</div>
         <button

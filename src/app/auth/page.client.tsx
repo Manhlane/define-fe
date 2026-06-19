@@ -32,6 +32,23 @@ const REGISTER_URL = `${AUTH_BASE_URL}/register`;
 const GOOGLE_AUTH_URL = `${AUTH_BASE_URL}/google`;
 const FORGOT_PASSWORD_URL = `${AUTH_BASE_URL}/forgot-password`;
 
+const authInputBaseClassName =
+  'h-[52px] w-full rounded-lg border bg-[var(--app-bg)] text-base text-[var(--app-foreground)] placeholder:text-[var(--app-muted-soft)] transition-colors focus:outline-none';
+
+const authPrimaryButtonClassName =
+  'h-[52px] w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[var(--app-accent-alt)] text-sm font-medium text-white transition-colors hover:bg-[var(--app-accent)] disabled:opacity-70';
+
+const authSecondaryButtonClassName =
+  'h-[52px] w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-bg)] text-sm font-medium text-[var(--app-foreground)] transition-colors hover:bg-[var(--app-surface-elevated)] disabled:opacity-70';
+
+function getAuthInputClassName(hasError: boolean, paddingClassName: string) {
+  return `${authInputBaseClassName} ${paddingClassName} ${
+    hasError
+      ? 'border-[var(--app-danger-border)] focus:border-[var(--app-danger-fg)]'
+      : 'border-[var(--app-border)] focus:border-[var(--app-accent)]'
+  }`;
+}
+
 type LoginResponse = {
   message?: string;
   accessToken?: string;
@@ -206,21 +223,21 @@ export default function MobileAuthPageClient() {
 
   const renderFieldError = (message?: string) =>
     message ? (
-      <p className="flex items-center gap-1 text-xs leading-4 text-red-600">
+      <p className="flex items-center gap-1 text-xs leading-4 text-[var(--app-danger-fg)]">
         <ExclamationCircleIcon className="h-4 w-4" aria-hidden="true" />
         {message}
       </p>
     ) : null;
 
   return (
-    <div className="min-h-[100dvh] bg-white text-black">
+    <div className="min-h-[100dvh] bg-[var(--app-bg)] text-[var(--app-foreground)]">
       <div className="flex items-center justify-between px-6 pt-12">
-        <div className="text-2xl font-semibold tracking-tight text-black">dfn!.</div>
+        <div className="text-2xl font-semibold tracking-tight text-[var(--app-foreground-strong)]">dfn!.</div>
         <button
           type="button"
           onClick={() => router.push('/welcome-to-dfn')}
           aria-label="Close"
-          className="group inline-flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition hover:text-black hover:bg-neutral-50 hover:scale-105 active:scale-95"
+          className="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted-soft)] transition-colors hover:bg-[var(--app-surface-strong)] hover:text-[var(--app-foreground-strong)]"
         >
           <X className="h-4 w-4 transition-transform group-hover:rotate-90" />
         </button>
@@ -236,7 +253,7 @@ export default function MobileAuthPageClient() {
                   ? 'Sign In'
                   : 'Sign Up'}
             </h1>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-[var(--app-muted)]">
               {mode === 'login'
                 ? 'Access your secured payments.'
                 : mode === 'register'
@@ -249,7 +266,7 @@ export default function MobileAuthPageClient() {
             <form onSubmit={handleResetSubmit} className="flex flex-col gap-6" noValidate>
               <div className="space-y-1">
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                  <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted-soft)]" />
                   <input
                     id="reset-email"
                     type="email"
@@ -261,18 +278,14 @@ export default function MobileAuthPageClient() {
                       setResetSent(false);
                       setResetErrorMessage(null);
                     }}
-                    className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
-                      resetErrorMessage
-                        ? 'border-red-300 focus:border-red-600'
-                        : 'border-neutral-300 focus:border-black'
-                    }`}
+                    className={getAuthInputClassName(Boolean(resetErrorMessage), 'pl-11 pr-4')}
                   />
                 </div>
                 {renderFieldError(resetErrorMessage || undefined)}
               </div>
 
               {resetSent && (
-                <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <div className="flex items-center gap-2 rounded-lg border border-[var(--app-success-border)] bg-[var(--app-success-bg)] px-4 py-3 text-sm text-[var(--app-success-fg)]">
                   <CheckCircleIcon className="h-5 w-5" />
                   <span>If this email exists, we&apos;ll send a reset link shortly.</span>
                 </div>
@@ -281,7 +294,7 @@ export default function MobileAuthPageClient() {
               <button
                 type="submit"
                 disabled={resetLoading}
-                className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
+                className={authPrimaryButtonClassName}
               >
                 {resetLoading ? 'Sending…' : 'Send reset link'}
               </button>
@@ -301,18 +314,14 @@ export default function MobileAuthPageClient() {
                   {mode === 'register' && (
                     <div className="space-y-1">
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                        <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted-soft)]" />
                         <input
                           {...registerForm.register('name')}
                           id="auth-name"
                           placeholder="Name"
                           aria-label="Name"
                           aria-invalid={Boolean(registerErrors.name)}
-                          className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
-                            registerErrors.name
-                              ? 'border-red-300 focus:border-red-600'
-                              : 'border-neutral-300 focus:border-black'
-                          }`}
+                          className={getAuthInputClassName(Boolean(registerErrors.name), 'pl-11 pr-4')}
                         />
                       </div>
                       {renderFieldError(registerErrors.name?.message)}
@@ -321,7 +330,7 @@ export default function MobileAuthPageClient() {
 
                   <div className="space-y-1">
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                      <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted-soft)]" />
                       <input
                         {...(mode === 'login'
                           ? loginForm.register('email')
@@ -330,11 +339,7 @@ export default function MobileAuthPageClient() {
                         placeholder="Email"
                         aria-label="Email"
                         aria-invalid={Boolean(formErrors.email)}
-                        className={`h-[52px] w-full rounded-xl border pl-11 pr-4 text-base focus:outline-none ${
-                          formErrors.email
-                            ? 'border-red-300 focus:border-red-600'
-                            : 'border-neutral-300 focus:border-black'
-                          }`}
+                        className={getAuthInputClassName(Boolean(formErrors.email), 'pl-11 pr-4')}
                       />
                     </div>
                     {renderFieldError(formErrors.email?.message)}
@@ -342,74 +347,70 @@ export default function MobileAuthPageClient() {
 
                   <div className="space-y-2">
                     <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-                        <input
-                          {...(mode === 'login'
-                            ? loginForm.register('password')
-                            : registerForm.register('password'))}
-                          id="auth-password"
-                          type={
-                            mode === 'login'
-                              ? showPassword ? 'text' : 'password'
-                              : showRegisterPassword ? 'text' : 'password'
-                          }
-                          placeholder="Password"
-                          aria-label="Password"
-                          aria-invalid={Boolean(formErrors.password)}
-                          className={`h-[52px] w-full rounded-xl border pl-11 pr-12 text-base focus:outline-none ${
-                            formErrors.password
-                            ? 'border-red-300 focus:border-red-600'
-                            : 'border-neutral-300 focus:border-black'
-                        }`}
+                      <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted-soft)]" />
+                      <input
+                        {...(mode === 'login'
+                          ? loginForm.register('password')
+                          : registerForm.register('password'))}
+                        id="auth-password"
+                        type={
+                          mode === 'login'
+                            ? showPassword ? 'text' : 'password'
+                            : showRegisterPassword ? 'text' : 'password'
+                        }
+                        placeholder="Password"
+                        aria-label="Password"
+                        aria-invalid={Boolean(formErrors.password)}
+                        className={getAuthInputClassName(Boolean(formErrors.password), 'pl-11 pr-12')}
                       />
                       <button
+                        type="button"
+                        onClick={() =>
+                          mode === 'login'
+                            ? setShowPassword(!showPassword)
+                            : setShowRegisterPassword(!showRegisterPassword)
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-muted-soft)] transition hover:text-[var(--app-foreground)]"
+                      >
+                        {(mode === 'login' ? showPassword : showRegisterPassword) ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+
+                    {renderFieldError(formErrors.password?.message)}
+
+                    {mode === 'login' && (
+                      <div className="text-right">
+                        <button
                           type="button"
-                          onClick={() =>
-                            mode === 'login'
-                              ? setShowPassword(!showPassword)
-                              : setShowRegisterPassword(!showRegisterPassword)
-                          }
-                          className="absolute right-3 top-1/2 -translate-y-1/2"
+                          onClick={() => setModeAndSync('reset')}
+                          className="text-xs font-medium text-[var(--app-accent-strong)] underline"
                         >
-                          {(mode === 'login' ? showPassword : showRegisterPassword) ? (
-                            <EyeOff className="h-4 w-4 text-neutral-400" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-neutral-400" />
-                          )}
+                          Forgot password?
                         </button>
                       </div>
-
-                      {renderFieldError(formErrors.password?.message)}
-
-                      {mode === 'login' && (
-                        <div className="text-right">
-                          <button
-                            type="button"
-                            onClick={() => setModeAndSync('reset')}
-                            className="text-xs font-medium text-black underline"
-                          >
-                            Forgot password?
-                          </button>
-                        </div>
-                      )}
+                    )}
                   </div>
                 </div>
 
                 {mode === 'login' && networkErrorMessage && (
-                  <div className="flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-center text-sm text-red-700">
-                    <ExclamationTriangleIcon className="h-4 w-4 text-red-600" />
+                  <div className="flex items-center justify-center gap-2 rounded-lg border border-[var(--app-danger-border)] bg-[var(--app-danger-bg)] px-3 py-2 text-center text-sm text-[var(--app-danger-fg)]">
+                    <ExclamationTriangleIcon className="h-4 w-4" />
                     <span>{networkErrorMessage}</span>
                   </div>
                 )}
 
                 {mode === 'register' && (
-                  <p className="text-xs text-neutral-500">
+                  <p className="text-xs text-[var(--app-muted)]">
                     By signing up, you agree to the{' '}
                     <Link
                       href="/terms-and-conditions"
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium text-black underline"
+                      className="font-medium text-[var(--app-accent-strong)] underline"
                     >
                       Terms of Service
                     </Link>{' '}
@@ -418,7 +419,7 @@ export default function MobileAuthPageClient() {
                       href="/privacy-policy"
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium text-black underline"
+                      className="font-medium text-[var(--app-accent-strong)] underline"
                     >
                       Privacy Policy
                     </Link>
@@ -428,7 +429,7 @@ export default function MobileAuthPageClient() {
 
                 <button
                   disabled={loading}
-                  className="h-[52px] w-full rounded-xl bg-black text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-70"
+                  className={authPrimaryButtonClassName}
                 >
                   {loading
                     ? 'Please wait...'
@@ -438,16 +439,16 @@ export default function MobileAuthPageClient() {
                 </button>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-neutral-200" />
-                  <span className="text-xs text-neutral-400">Or continue with</span>
-                  <div className="h-px flex-1 bg-neutral-200" />
+                  <div className="h-px flex-1 bg-[var(--app-border)]" />
+                  <span className="text-xs text-[var(--app-muted-soft)]">Or continue with</span>
+                  <div className="h-px flex-1 bg-[var(--app-border)]" />
                 </div>
 
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={googleLoading}
-                  className="h-[52px] w-full rounded-xl border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:opacity-70"
+                  className={authSecondaryButtonClassName}
                 >
                   <span className="flex items-center justify-center gap-2">
                     <FcGoogle size={18} />
@@ -457,13 +458,13 @@ export default function MobileAuthPageClient() {
               </div>
 
               <div className="mt-6 space-y-3 text-center">
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-[var(--app-muted)]">
                   {mode === 'login' ? (
                     <>
                       <button
                         type="button"
                         onClick={() => setModeAndSync('register')}
-                        className="font-medium text-black underline"
+                        className="font-medium text-[var(--app-accent-strong)] underline"
                       >
                         New to dfn!.? Create your free account
                       </button>
@@ -473,7 +474,7 @@ export default function MobileAuthPageClient() {
                       <button
                         type="button"
                         onClick={() => setModeAndSync('login')}
-                        className="font-medium text-black underline"
+                        className="font-medium text-[var(--app-accent-strong)] underline"
                       >
                         Already have an account? Sign In
                       </button>

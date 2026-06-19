@@ -1,15 +1,23 @@
 'use client';
 
 import DefineLayout from '../../components/DefineLayout';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  BuildingLibraryIcon,
+  BuildingOffice2Icon,
+  CameraIcon,
+  ChevronDownIcon,
   CheckCircleIcon,
+  CheckIcon,
+  CreditCardIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
-  InformationCircleIcon,
-  PencilSquareIcon,
+  LockClosedIcon,
+  PhoneIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 import { NotificationsClient } from '../../lib/notifications';
 
@@ -267,6 +275,76 @@ function persistProfileToStorage(profile: ProfileData) {
   }
   window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
 }
+
+function classNames(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(' ');
+}
+
+function FieldLabel({
+  htmlFor,
+  children,
+  meta,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+  meta?: ReactNode;
+}) {
+  return (
+    <div className="mb-2 flex items-center justify-between gap-3">
+      <label
+        htmlFor={htmlFor}
+        className="text-[10.5px] font-semibold uppercase tracking-[0.22em] text-neutral-600"
+      >
+        {children}
+      </label>
+      {meta && (
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-neutral-400">
+          {meta}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SectionTitle({
+  number,
+  title,
+  description,
+  action,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="border-t border-neutral-200 pt-9">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 gap-3">
+          <div className="flex items-center gap-3 pt-1">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-600">
+              {number}
+            </span>
+            <span className="hidden h-px w-6 bg-neutral-300 sm:block" />
+          </div>
+          <div>
+            <h2 className="text-[22px] font-medium leading-none tracking-[-0.02em] text-black">
+              {title}
+            </h2>
+            <p className="mt-3 text-[13px] leading-5 text-neutral-600">{description}</p>
+          </div>
+        </div>
+        {action}
+      </div>
+    </div>
+  );
+}
+
+const inputFrameBase =
+  'h-12 w-full rounded-2xl border bg-white text-[14px] text-black outline-none transition placeholder:text-neutral-400 focus:border-black focus:ring-0';
+const inputBase = `${inputFrameBase} pl-11 pr-4`;
+const iconSelectBase = `${inputFrameBase} pl-11 pr-10`;
+const plainSelectBase = `${inputFrameBase} pl-4 pr-10`;
 
 function ProfilePageContent() {
   const {
@@ -538,56 +616,55 @@ function ProfilePageContent() {
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate>
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
-        <header className="space-y-4">
+    <form className="theme-midnight bg-transparent text-[var(--app-foreground)]" onSubmit={onSubmit} noValidate>
+      <div className="mx-auto w-full max-w-[768px] px-4 pb-24 pt-10 sm:px-6 lg:pt-12">
+        <header className="flex items-start justify-between gap-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl">Profile</h1>
-            <p className="mt-1 text-sm text-gray-500 sm:text-base">
-              Complete your profile to start receiving payments.
+            <h1 className="text-[40px] font-medium leading-none tracking-[-0.025em] text-black">
+              Profile
+            </h1>
+            <p className="mt-3 text-[14px] leading-6 text-neutral-600">
+              Complete your profile to start <span className="italic">receiving payments.</span>
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div
-              className="h-2 w-full flex-1 overflow-hidden rounded-full bg-white"
-              role="progressbar"
-              aria-valuenow={profileCompletion.percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div
-                className="h-full bg-gray-900 transition-[width] duration-500"
-                style={{ width: `${profileCompletion.percent}%` }}
-              />
+
+          <div
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-full"
+            role="progressbar"
+            aria-valuenow={profileCompletion.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            style={{
+              background: `conic-gradient(var(--app-accent) ${profileCompletion.percent * 3.6}deg, var(--app-border) 0deg)`,
+            }}
+          >
+            <div className="grid h-[46px] w-[46px] place-items-center rounded-full bg-[var(--app-surface)] text-[13px] font-semibold text-[var(--app-foreground-strong)]">
+              {profileCompletion.percent}%
             </div>
-            <span className="text-sm font-semibold text-gray-700">{profileCompletion.percent}%</span>
           </div>
         </header>
 
         {feedback && (
           <div
-            className={`mt-5 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+            className={classNames(
+              'mt-8 flex items-start gap-3 rounded-2xl border px-4 py-3 text-[13px]',
               feedback.type === 'success'
-                ? 'border-green-200 bg-green-50 text-green-700'
-                : 'border-red-200 bg-red-50 text-red-700'
-            }`}
+                ? 'border-[var(--app-success-border)] bg-[var(--app-success-bg)] text-[var(--app-success-fg)]'
+                : 'border-[var(--app-danger-border)] bg-[var(--app-danger-bg)] text-[var(--app-danger-fg)]',
+            )}
           >
             {feedback.type === 'success' ? (
-              <CheckCircleIcon className="mt-0.5 h-5 w-5" />
+              <CheckCircleIcon className="mt-0.5 h-4 w-4 shrink-0" />
             ) : (
-              <ExclamationTriangleIcon className="mt-0.5 h-5 w-5" />
+              <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
             )}
             <span>{feedback.message}</span>
           </div>
         )}
 
-        <div className="mt-6 space-y-6">
-          <section className="space-y-4">
-            <div className="flex flex-col items-center gap-1 text-center">
-              <p className="text-lg font-semibold text-gray-900 sm:text-xl">{fullName || 'Your profile'}</p>
-              {businessName?.trim() && (
-                <p className="text-sm text-gray-500">{businessName}</p>
-              )}
+        <section className="mt-9 rounded-2xl border border-neutral-200 bg-white p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-5">
               <div
                 role="button"
                 tabIndex={0}
@@ -598,228 +675,270 @@ function ProfilePageContent() {
                     handleAvatarClick();
                   }
                 }}
-                className="relative mt-2 h-20 w-20 cursor-pointer focus:outline-none"
+                className="group relative h-16 w-16 shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--app-bg)]"
                 aria-label="Change profile photo"
               >
-                <div className="relative h-full w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 text-gray-700 transition hover:bg-neutral-200/70">
+                <div className="relative h-full w-full overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 text-black transition hover:bg-neutral-200">
                   {avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatarUrl} alt="Profile picture" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-lg font-semibold">
+                    <div className="grid h-full w-full place-items-center text-[18px] font-medium">
                       {initials}
                     </div>
                   )}
                   {avatarLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-                      <ArrowPathIcon className="h-4 w-4 animate-spin text-gray-600" />
+                    <div className="absolute inset-0 grid place-items-center bg-white/80">
+                      <ArrowPathIcon className="h-4 w-4 animate-spin text-neutral-700" />
                     </div>
                   )}
                 </div>
-                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-200 bg-white text-gray-700">
-                  <PencilSquareIcon className="h-3.5 w-3.5" />
+                <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full border border-[var(--app-border)] bg-[var(--app-surface-strong)] text-[var(--app-foreground-strong)] transition group-hover:border-[var(--app-accent)] group-hover:bg-[var(--app-accent)] group-hover:text-[var(--app-ink)]">
+                  <CameraIcon className="h-4 w-4" />
                 </span>
               </div>
-              <div className="space-y-1 text-xs text-gray-500">
-                <p>JPG, PNG or GIF. Max size 2MB.</p>
-              </div>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </section>
 
-          <section className="border-t border-neutral-200 pt-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Personal details</h2>
-              <p className="text-sm text-gray-500">Update how you appear across the platform.</p>
-            </div>
-
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="fullName" className="text-xs font-semibold text-gray-700">
-                  Full name
-                </label>
-                <input
-                  {...register('fullName', { required: 'Name is required' })}
-                  id="fullName"
-                  type="text"
-                  placeholder="Manhlane Mamabolo"
-                  aria-label="Full name"
-                  className={`mt-2 block h-[40px] w-full rounded-xl border px-4 text-base text-black placeholder:text-black focus:outline-none focus:ring-0 ${
-                    fullNameError
-                      ? 'border-red-300 focus:border-red-600'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
-              </div>
-              <div>
-                <label htmlFor="businessName" className="text-xs font-semibold text-gray-700">
-                  Business name (optional)
-                </label>
-                <input
-                  {...register('businessName')}
-                  id="businessName"
-                  type="text"
-                  placeholder="e.g. Manhlane Photography"
-                  aria-label="Business name"
-                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black placeholder:text-black focus:border-black focus:outline-none focus:ring-0"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="text-xs font-semibold text-gray-700">
-                  Email address
-                </label>
-                <input
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: { value: /\S+@\S+\.\S+/, message: 'Enter a valid email address' },
-                  })}
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  aria-label="Email"
-                  className={`mt-2 block h-[40px] w-full rounded-xl border px-4 text-base text-black placeholder:text-black focus:outline-none focus:ring-0 ${
-                    emailError
-                      ? 'border-red-300 focus:border-red-600'
-                      : 'border-neutral-300 focus:border-black'
-                  }`}
-                />
-              </div>
-              <div>
-                <label htmlFor="phone" className="text-xs font-semibold text-gray-700">
-                  Phone number
-                </label>
-                <input
-                  {...register('phone')}
-                  id="phone"
-                  type="tel"
-                  placeholder="+27 71 123 4567"
-                  aria-label="Phone number"
-                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black placeholder:text-black focus:border-black focus:outline-none focus:ring-0"
-                />
+              <div className="min-w-0 py-1">
+                <p className="truncate text-[21px] font-medium leading-tight tracking-[-0.02em] text-black">
+                  {fullName || 'Your profile'}
+                </p>
+                {businessName?.trim() && (
+                  <p className="mt-1 truncate text-[13px] text-neutral-600">
+                    {businessName}
+                  </p>
+                )}
+                <p className="mt-1 text-[11.5px] text-neutral-500">JPG, PNG or GIF · Max 2MB</p>
               </div>
             </div>
 
-            <div className="mt-6">
-              <span className="block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Email verification
-              </span>
-              <input type="hidden" {...register('verificationStatus')} />
+            <div
+              className={classNames(
+                'inline-flex h-7 w-fit items-center gap-1.5 rounded-full border px-3 text-[9.5px] font-semibold uppercase tracking-[0.16em]',
+                verificationStatus === 'verified'
+                  ? 'border-[var(--app-success-border)] bg-[var(--app-success-bg)] text-[var(--app-success-fg)]'
+                  : 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-ink)]',
+              )}
+            >
               {verificationStatus === 'verified' ? (
-                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                  <CheckCircleIcon className="h-4 w-4" />
-                  Email verified
-                </div>
+                <CheckIcon className="h-3.5 w-3.5" />
               ) : (
-                <div className="mt-3 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start gap-2">
-                    <EnvelopeIcon className="mt-0.5 h-5 w-5" />
-                    <div>
-                      <p>Verify your email</p>
-                      <p className="text-xs text-red-700">
-                        Check your inbox and click the verification link to activate your account.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={verificationSending}
-                    className="w-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                  >
-                    {verificationSending ? 'Sending…' : 'Resend verification email'}
-                  </button>
+                <EnvelopeIcon className="h-3.5 w-3.5" />
+              )}
+              {verificationStatus === 'verified' ? 'Verified' : 'Pending verification'}
+            </div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+        </section>
+
+        <div className="mt-10 space-y-10">
+          <section>
+            <SectionTitle
+              number="01"
+              title="Personal details"
+              description="How you appear to clients across links and receipts."
+            />
+
+            <div className="mt-7 grid gap-x-3 gap-y-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+                <div className="relative">
+                  <UserIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...register('fullName', { required: 'Name is required' })}
+                    id="fullName"
+                    type="text"
+                    placeholder="Manhlane Mamabolo"
+                    aria-label="Full name"
+                    className={classNames(
+                      inputBase,
+                      fullNameError ? 'border-red-300 focus:border-red-600' : 'border-neutral-300',
+                    )}
+                  />
                 </div>
+                {errors.fullName && (
+                  <p className="mt-2 text-[12px] text-red-600">{errors.fullName.message}</p>
+                )}
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="businessName" meta="Optional">Business name</FieldLabel>
+                <div className="relative">
+                  <BuildingOffice2Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...register('businessName')}
+                    id="businessName"
+                    type="text"
+                    placeholder="Tlhax Photography"
+                    aria-label="Business name"
+                    className={classNames(inputBase, 'border-neutral-300')}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="email">Email address</FieldLabel>
+                <div className="relative">
+                  <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: { value: /\S+@\S+\.\S+/, message: 'Enter a valid email address' },
+                    })}
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    aria-label="Email"
+                    className={classNames(
+                      inputBase,
+                      emailError ? 'border-red-300 focus:border-red-600' : 'border-neutral-300',
+                    )}
+                  />
+                </div>
+                {errors.email && (
+                  <p className="mt-2 text-[12px] text-red-600">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="phone">Phone number</FieldLabel>
+                <div className="relative">
+                  <PhoneIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...register('phone')}
+                    id="phone"
+                    type="tel"
+                    placeholder="+27 71 123 4567"
+                    aria-label="Phone number"
+                    className={classNames(inputBase, 'border-neutral-300')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <input type="hidden" {...register('verificationStatus')} />
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              {verificationStatus === 'verified' ? (
+                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[var(--app-success-border)] bg-[var(--app-success-bg)] px-3 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-[var(--app-success-fg)]">
+                  <CheckIcon className="h-3.5 w-3.5" />
+                  Email verified
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={verificationSending}
+                  className="inline-flex h-7 -translate-y-1 items-center gap-1.5 rounded-full bg-[var(--app-accent)] px-3 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-[var(--app-ink)] shadow-sm transition hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <EnvelopeIcon className="h-3.5 w-3.5" />
+                  {verificationSending ? 'Sending' : 'Verify email'}
+                </button>
               )}
             </div>
           </section>
 
-          <section className="border-t border-neutral-200 pt-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Bank details</h2>
-              <p className="text-sm text-gray-500">Required to receive payments.</p>
-            </div>
+          <section>
+            <SectionTitle
+              number="02"
+              title="Payout account"
+              description="Released funds settle here within 24 hours of delivery."
+              action={
+                <span className="inline-flex h-6 items-center gap-1.5 rounded-full border border-[var(--app-accent)] bg-[var(--app-accent)] px-3 text-[9.5px] font-semibold uppercase tracking-[0.16em] text-[var(--app-ink)]">
+                  <LockClosedIcon className="h-3.5 w-3.5" />
+                  Required for payout
+                </span>
+              }
+            />
 
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+            <div className="mt-7 grid gap-x-3 gap-y-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="bankName" className="text-xs font-semibold text-gray-700">
-                  Bank name
-                </label>
-                <select
-                  {...register('bankName')}
-                  id="bankName"
-                  aria-label="Bank name"
-                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black focus:border-black focus:outline-none focus:ring-0"
-                >
-                  <option value="">Select your bank</option>
-                  <option value="FNB">FNB</option>
-                  <option value="Standard Bank">Standard Bank</option>
-                  <option value="ABSA">ABSA</option>
-                  <option value="Nedbank">Nedbank</option>
-                  <option value="Capitec">Capitec</option>
-                </select>
+                <FieldLabel htmlFor="bankName">Bank</FieldLabel>
+                <div className="relative">
+                  <BuildingLibraryIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <select
+                    {...register('bankName')}
+                    id="bankName"
+                    aria-label="Bank name"
+                    className={classNames(iconSelectBase, 'appearance-none border-neutral-300')}
+                  >
+                    <option value="">Select your bank</option>
+                    <option value="FNB">FNB</option>
+                    <option value="Standard Bank">Standard Bank</option>
+                    <option value="ABSA">ABSA</option>
+                    <option value="Nedbank">Nedbank</option>
+                    <option value="Capitec">Capitec</option>
+                  </select>
+                  <ChevronDownIcon className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                </div>
               </div>
+
               <div>
-                <label htmlFor="accountNumber" className="text-xs font-semibold text-gray-700">
-                  Account number
-                </label>
-                <input
-                  {...register('accountNumber')}
-                  id="accountNumber"
-                  type="text"
-                  placeholder="1234567890"
-                  aria-label="Account number"
-                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black placeholder:text-black focus:border-black focus:outline-none focus:ring-0"
-                />
+                <FieldLabel htmlFor="accountNumber">Account number</FieldLabel>
+                <div className="relative">
+                  <CreditCardIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                  <input
+                    {...register('accountNumber')}
+                    id="accountNumber"
+                    type="text"
+                    placeholder="654433545433"
+                    aria-label="Account number"
+                    className={classNames(inputBase, 'border-neutral-300')}
+                  />
+                </div>
               </div>
+
               <div>
-                <label htmlFor="accountType" className="text-xs font-semibold text-gray-700">
-                  Account type
-                </label>
-                <select
-                  {...register('accountType')}
-                  id="accountType"
-                  aria-label="Account type"
-                  className="mt-2 block h-[40px] w-full rounded-xl border border-neutral-300 px-4 text-base text-black focus:border-black focus:outline-none focus:ring-0"
-                >
-                  <option value="">Select</option>
-                  <option value="cheque">Cheque</option>
-                  <option value="savings">Savings</option>
-                  <option value="business">Business</option>
-                </select>
+                <FieldLabel htmlFor="accountType">Account type</FieldLabel>
+                <div className="relative">
+                  <select
+                    {...register('accountType')}
+                    id="accountType"
+                    aria-label="Account type"
+                    className={classNames(plainSelectBase, 'appearance-none border-neutral-300')}
+                  >
+                    <option value="">Select</option>
+                    <option value="cheque">Cheque</option>
+                    <option value="savings">Savings</option>
+                    <option value="business">Business</option>
+                  </select>
+                  <ChevronDownIcon className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+                </div>
               </div>
             </div>
 
-            <div className="mt-5 flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-              <InformationCircleIcon className="mt-0.5 h-5 w-5" />
-              <p>
-                Your bank details are encrypted and secure. Payments will be transferred to this account after
-                services are completed.
-              </p>
+            <div className="mt-7 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[12.5px] leading-5 text-neutral-600">
+              <LockClosedIcon className="h-4 w-4 shrink-0 text-neutral-500" />
+              <p>Bank details are encrypted at rest and only used to release funds once the client confirms delivery.</p>
             </div>
           </section>
+        </div>
 
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-end sm:gap-3">
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={saving}
-              className="inline-flex w-full items-center justify-center border border-neutral-300 px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving || !canSubmit}
-              className="inline-flex w-full items-center justify-center bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-            >
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
+        <div className="sticky bottom-6 z-20 mt-24 rounded-2xl border border-[var(--app-border)] bg-[rgba(17,26,49,0.92)] px-4 py-3 shadow-[var(--app-shadow)] backdrop-blur">
+          <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={saving || !canSubmit}
+                className="inline-flex h-10 items-center justify-center rounded-full px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-600 transition hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving || !canSubmit}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[var(--app-accent)] px-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--app-ink)] transition hover:bg-[var(--app-accent-strong)] hover:text-[var(--app-ink)] disabled:cursor-not-allowed disabled:bg-[var(--app-surface-soft)] disabled:text-[var(--app-muted)] disabled:hover:bg-[var(--app-surface-soft)] disabled:hover:text-[var(--app-muted)]"
+              >
+                {saving ? 'Saving' : 'Save changes'}
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

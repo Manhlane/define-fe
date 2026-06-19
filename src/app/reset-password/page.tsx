@@ -5,7 +5,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[100dvh] bg-white text-black">
+        <div className="theme-midnight min-h-[100dvh] bg-white text-black">
           <div className="flex items-center px-6 pt-12">
             <div className="text-xl font-semibold tracking-tight text-black">
               dfn!.

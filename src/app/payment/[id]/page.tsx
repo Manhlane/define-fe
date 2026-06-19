@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
-  CheckCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  LockClosedIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 const PAYMENTS_BASE_URL =
@@ -19,64 +18,45 @@ type PaymentSchedule = {
   dueDate: string;
   status: 'pending' | 'paid' | 'overdue';
   paystackAuthorizationUrl?: string | null;
-  paystackReference?: string | null;
-  paidAt?: string | null;
+};
+
+type Deliverable = {
+  id: string;
+  title: string;
+  type: string;
+  quantity: number;
 };
 
 type PaymentIntent = {
-  id: string;
-  publicId: string;
+  id?: string;
+  publicId?: string;
   slug?: string;
-  userId: string;
   clientName: string;
-  clientEmail: string;
-  clientPhone: string;
   serviceDescription: string;
   shootDate: string;
   deliveryDate: string;
   currency: string;
   totalAmount: number;
-  status: 'draft' | 'pending' | 'partially_paid' | 'paid' | 'completed' | 'disputed';
-  requireDeposit: boolean;
   schedules: PaymentSchedule[];
+  deliverables?: Deliverable[];
+  provider?: {
+    name?: string | null;
+    avatarUrl?: string | null;
+    isVerified?: boolean;
+  } | null;
 };
 
-const statusLabels: Record<PaymentIntent['status'], string> = {
-  draft: 'Draft',
-  pending: 'Pending',
-  partially_paid: 'Partially paid',
-  paid: 'Paid',
-  completed: 'Completed',
-  disputed: 'Disputed',
-};
-
-const formatCurrency = (amount: number, currency: string) => {
-  const safe = Number.isFinite(amount) ? amount : 0;
+const safeDecode = (value: string) => {
   try {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(safe);
+    return decodeURIComponent(value);
   } catch {
-    return `${currency} ${safe.toFixed(2)}`;
+    return value;
   }
 };
 
-const formatDate = (value?: string | null) => {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-ZA', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
-
 const formatProviderName = (provider?: string) => {
-  const raw = provider?.trim();
-  if (!raw) return '';
+  const raw = safeDecode(provider ?? '').trim();
+  if (!raw) return 'Service provider';
 
   return raw
     .replace(/^@/, '')
@@ -84,32 +64,89 @@ const formatProviderName = (provider?: string) => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
+const getInitials = (value: string) => {
+  const parts = value
+    .split(' ')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return 'DF';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]!.charAt(0)}${parts[parts.length - 1]!.charAt(0)}`.toUpperCase();
+};
+
+const getFirstName = (value: string) => {
+  return value.trim().split(/\s+/)[0] || 'there';
+};
+
+const formatCurrency = (amount: number, currency: string) => {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+
+  try {
+    return new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(safeAmount);
+  } catch {
+    return `${currency} ${Math.round(safeAmount).toLocaleString('en-ZA')}`;
+  }
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return 'No due date';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'No due date';
+
+  return date.toLocaleDateString('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const formatInvoiceReference = (reference: string) => {
+  const trimmed = reference.trim();
+  if (!trimmed) return 'INV';
+  return trimmed.toUpperCase().startsWith('INV') ? trimmed : `INV-${trimmed}`;
+};
+
+const formatShootMeta = (serviceDescription: string) => {
+  return serviceDescription
+    .replace(/[·•]/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+};
+
+function PaystackLogoPill({ className = '' }: { className?: string }) {
+  return (
+    <span className={`inline-flex h-6 items-center rounded-full bg-white px-2.5 ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/images/paystack-2.svg" alt="Paystack" className="h-3.5 w-auto" />
+    </span>
+  );
+}
+
 export default function PaymentLinkPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const intentId = typeof params?.id === 'string' ? params.id : '';
-  const providerHandle = typeof params?.provider === 'string' ? params.provider : '';
-  const providerName = useMemo(() => formatProviderName(providerHandle), [providerHandle]);
+  const providerHandle =
+    typeof params?.provider === 'string' ? params.provider : '';
+  const fallbackProviderName = formatProviderName(providerHandle);
 
   const [intent, setIntent] = useState<PaymentIntent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [payingScheduleId, setPayingScheduleId] = useState<string | null>(null);
-
-  const fetchIntent = () =>
-    fetch(
-      `${PAYMENTS_BASE_URL.replace(/\/$/, '')}/payment-intents/${encodeURIComponent(
-        intentId,
-      )}`,
-    )
-      .then(async (res) => {
-        const body = (await res.json().catch(() => null)) as PaymentIntent | null;
-        if (!res.ok || !body) {
-          throw new Error('Payment link not found.');
-        }
-        return body;
-      });
+  const pageFontStyle = { fontFamily: 'var(--font-space-grotesk)' };
+  const paymentCardStyle = {
+    background:
+      'radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 28%), radial-gradient(circle at 20% 15%, rgba(188, 151, 255, 0.22), transparent 24%), linear-gradient(180deg, #945cf8 0%, #844cf2 46%, #7a45ed 100%)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 24px 60px rgba(39, 10, 90, 0.28)',
+  };
 
   useEffect(() => {
     if (!intentId) return;
@@ -118,14 +155,27 @@ export default function PaymentLinkPage() {
     setLoading(true);
     setError(null);
 
-    fetchIntent()
+    fetch(
+      `${PAYMENTS_BASE_URL.replace(/\/$/, '')}/payment-intents/${encodeURIComponent(
+        intentId,
+      )}`,
+    )
+      .then(async (res) => {
+        const body = (await res.json().catch(() => null)) as PaymentIntent | null;
+        if (!res.ok || !body) {
+          throw new Error('Payment link unavailable');
+        }
+        return body;
+      })
       .then((data) => {
         if (!active) return;
         setIntent(data);
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'Unable to load payment.');
+        setError(
+          err instanceof Error ? err.message : 'Payment link unavailable',
+        );
       })
       .finally(() => {
         if (!active) return;
@@ -144,22 +194,14 @@ export default function PaymentLinkPage() {
     );
   }, [intent?.schedules]);
 
-  const paidSchedules = useMemo(
-    () => schedules.filter((schedule) => schedule.status === 'paid'),
+  const activeSchedule = useMemo(
+    () => schedules.find((schedule) => schedule.status !== 'paid') ?? schedules[0],
     [schedules],
   );
 
-  const paymentReference =
-    searchParams?.get('reference') ||
-    searchParams?.get('trxref') ||
-    searchParams?.get('payment_reference') ||
-    '';
-  const paymentStatus = searchParams?.get('status') || '';
-  const showConfirmation =
-    paymentStatus.toLowerCase() === 'success' || Boolean(paymentReference);
-
   const handlePaySchedule = async (schedule: PaymentSchedule) => {
     if (schedule.status === 'paid') return;
+
     setPayError(null);
     setPayingScheduleId(schedule.id);
 
@@ -181,21 +223,11 @@ export default function PaymentLinkPage() {
         throw new Error('Unable to start payment. Please try again.');
       }
 
-      setIntent((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          schedules: prev.schedules.map((item) =>
-            item.id === schedule.id
-              ? { ...item, paystackAuthorizationUrl: body.authorizationUrl }
-              : item,
-          ),
-        };
-      });
-
       window.location.href = body.authorizationUrl;
     } catch (err) {
-      setPayError(err instanceof Error ? err.message : 'Payment failed to start.');
+      setPayError(
+        err instanceof Error ? err.message : 'Unable to start payment.',
+      );
     } finally {
       setPayingScheduleId(null);
     }
@@ -203,276 +235,206 @@ export default function PaymentLinkPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-white px-6 py-12 text-black">
-        <div className="mx-auto max-w-2xl animate-pulse space-y-4">
-          <div className="h-6 w-40 rounded bg-neutral-200" />
-          <div className="h-10 w-3/4 rounded bg-neutral-200" />
-          <div className="h-24 rounded bg-neutral-100" />
-          <div className="h-24 rounded bg-neutral-100" />
+      <main
+        className="dfn-indigo-page min-h-[100dvh] px-4 py-6 text-[var(--app-foreground)]"
+        style={pageFontStyle}
+      >
+        <div className="mx-auto max-w-[690px] animate-pulse space-y-4">
+          <div className="h-[390px] rounded-2xl bg-[var(--app-surface-elevated)]" />
+          <div className="h-14 rounded-2xl bg-[var(--app-surface)]" />
+          <div className="h-[520px] rounded-2xl bg-[var(--app-surface)]" />
         </div>
-      </div>
+      </main>
     );
   }
 
   if (error || !intent) {
     return (
-      <div className="min-h-[100dvh] bg-white px-6 py-16 text-black">
-        <div className="mx-auto max-w-xl text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
-            <ExclamationTriangleIcon className="h-7 w-7" />
-          </div>
-          <h1 className="mt-4 text-2xl font-semibold">Payment link unavailable</h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            {error ?? 'This payment request could not be found.'}
+      <main
+        className="dfn-indigo-page min-h-[100dvh] px-4 py-8 text-[var(--app-foreground)]"
+        style={pageFontStyle}
+      >
+        <div className="mx-auto max-w-[690px]">
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex h-8 items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 text-sm text-[var(--app-muted)] transition hover:bg-[var(--app-surface-elevated)] hover:text-[var(--app-foreground)]"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
+          </button>
+          <p className="mt-10 text-sm text-[var(--app-muted)]">
+            {error ?? 'Payment link unavailable'}
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
-  const statusLabel = statusLabels[intent.status];
-  const isPaid = intent.status === 'paid' || intent.status === 'completed';
+  const displayProviderName =
+    intent.provider?.name?.trim() || fallbackProviderName;
+  const providerInitials = getInitials(displayProviderName);
+  const avatarUrl = intent.provider?.avatarUrl;
+  const reference = intent.slug ?? intent.publicId ?? intent.id ?? intentId;
+  const invoiceReference = formatInvoiceReference(reference);
+  const shootDateLabel = formatDate(intent.shootDate);
+  const shootMetaLabel = formatShootMeta(intent.serviceDescription);
+  const activeAmount = activeSchedule?.amount ?? intent.totalAmount;
+  const remainingAmount = Math.max(intent.totalAmount - activeAmount, 0);
+  const splitPercent =
+    intent.totalAmount > 0 ? Math.round((activeAmount / intent.totalAmount) * 100) : 100;
+  const paymentOptionLabel =
+    schedules.length > 1 && activeSchedule?.type !== 'full'
+      ? `${splitPercent}% deposit`
+      : 'Pay in full';
+  const isPrimaryOptionSelected =
+    schedules.length === 1 || activeSchedule?.type !== 'full';
 
   return (
-    <div className="min-h-[100dvh] bg-white text-black">
-      <header className="border-b border-neutral-200 px-6 py-8">
-        <div className="mx-auto flex max-w-4xl flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">
-            dfn! secure payment
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {intent.serviceDescription}
-          </h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-500">
-            {providerName && (
-              <>
-                <span>Provider: {providerName}</span>
-                <span className="h-1 w-1 rounded-full bg-neutral-300" />
-              </>
-            )}
-            <span>Client: {intent.clientName}</span>
-            <span className="h-1 w-1 rounded-full bg-neutral-300" />
-            <span>Status: {statusLabel}</span>
+    <main
+      className="dfn-indigo-page min-h-[100dvh] px-5 py-8 text-[var(--app-foreground)]"
+      style={pageFontStyle}
+    >
+      <div className="mx-auto max-w-[496px]">
+        <header className="flex items-center justify-between border-b border-[var(--app-border)] pb-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--app-surface-strong)] text-[12.5px] font-semibold text-[var(--app-foreground-strong)]">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt={`${displayProviderName} profile picture`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                providerInitials
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-[14px] font-semibold text-[var(--app-foreground-strong)]">{displayProviderName}</p>
+              <p className="mt-1 truncate text-[11.5px] text-[var(--app-muted)]">
+                {intent.serviceDescription} · {shootDateLabel}
+              </p>
+            </div>
           </div>
-        </div>
-      </header>
+          <span className="font-display inline-flex shrink-0 items-center gap-2 text-[7px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted)]">
+            <PaystackLogoPill />
+          </span>
+        </header>
 
-      <main className="px-6 py-10">
-        <div className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <section className="space-y-6">
-            {showConfirmation && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
-                <div className="flex items-start gap-3">
-                  <CheckCircleIcon className="mt-0.5 h-5 w-5 text-emerald-600" />
-                  <div className="space-y-1">
-                    <p className="font-semibold">Payment received</p>
-                    <p className="text-xs text-emerald-700">
-                      We are confirming your payment. This can take a few moments.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoading(true);
-                        fetchIntent()
-                          .then((data) => setIntent(data))
-                          .catch((err) =>
-                            setError(
-                              err instanceof Error
-                                ? err.message
-                                : 'Unable to refresh payment.',
-                            ),
-                          )
-                          .finally(() => setLoading(false));
-                      }}
-                      className="mt-2 inline-flex h-8 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 text-xs font-semibold text-emerald-700"
-                    >
-                      Refresh status
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-                    Shoot details
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-neutral-900">
-                    {intent.clientName}
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    Shoot date: {formatDate(intent.shootDate)}
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    Delivery date: {formatDate(intent.deliveryDate)}
-                  </p>
-                </div>
-                <div className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-semibold text-neutral-600">
-                  {intent.currency}
-                </div>
-              </div>
+        <section className="pt-6">
+          <p className="font-display text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-soft)]">
+            {invoiceReference} · {shootMetaLabel}
+          </p>
+          <h1 className="font-display mt-3 text-[27px] font-medium leading-[1.12] tracking-normal text-[var(--app-foreground-strong)] sm:text-[32px]">
+            Hi <span className="italic text-[var(--app-muted)]">{getFirstName(intent.clientName)}</span> — here&apos;s your invoice from{' '}
+            {displayProviderName}.
+          </h1>
 
-              <div className="mt-6 grid gap-4">
-                {schedules.map((schedule) => {
-                  const isSchedulePaid = schedule.status === 'paid';
-                  const isPaying = payingScheduleId === schedule.id;
-                  const scheduleLabel =
-                    schedule.type === 'deposit'
-                      ? 'Deposit'
-                      : schedule.type === 'remainder'
-                        ? 'Remainder'
-                        : 'Full payment';
-
-                  return (
-                    <div
-                      key={schedule.id}
-                      className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-4"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-neutral-900">
-                            {scheduleLabel}
-                          </p>
-                          <p className="text-xs text-neutral-500">
-                            Due {formatDate(schedule.dueDate)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-neutral-900">
-                            {formatCurrency(schedule.amount, intent.currency)}
-                          </p>
-                          <p
-                            className={`text-xs font-semibold ${
-                              isSchedulePaid ? 'text-emerald-600' : 'text-neutral-500'
-                            }`}
-                          >
-                            {isSchedulePaid ? 'Paid' : 'Pending'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-xs text-neutral-500">
-                          {isSchedulePaid ? (
-                            <CheckCircleIcon className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <ClockIcon className="h-4 w-4 text-neutral-400" />
-                          )}
-                          {isSchedulePaid
-                            ? `Paid on ${formatDate(schedule.paidAt)}`
-                            : 'Secure checkout via Paystack'}
-                        </div>
-                        {!isSchedulePaid && (
-                          <button
-                            type="button"
-                            onClick={() => handlePaySchedule(schedule)}
-                            disabled={isPaying}
-                            className="inline-flex h-9 items-center justify-center rounded-lg border border-black bg-black px-4 text-xs font-semibold text-white transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
-                          >
-                            {isPaying ? 'Redirecting…' : 'Pay now'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {paidSchedules.length > 0 && (
-                <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                    Receipt
-                  </p>
-                  <div className="mt-3 space-y-3 text-sm text-emerald-900">
-                    {paidSchedules.map((schedule) => (
-                      <div
-                        key={`receipt-${schedule.id}`}
-                        className="flex flex-wrap items-center justify-between gap-2"
-                      >
-                        <div>
-                          <p className="font-semibold">
-                            {schedule.type === 'deposit'
-                              ? 'Deposit'
-                              : schedule.type === 'remainder'
-                                ? 'Remainder'
-                                : 'Full payment'}
-                          </p>
-                          <p className="text-xs text-emerald-700">
-                            Paid on {formatDate(schedule.paidAt)}
-                          </p>
-                        </div>
-                        <div className="text-right text-sm font-semibold">
-                          {formatCurrency(schedule.amount, intent.currency)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {paymentReference && (
-                    <p className="mt-3 text-xs text-emerald-700">
-                      Reference: {paymentReference}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {payError && (
-                <p className="mt-4 flex items-center gap-2 text-xs text-red-600">
-                  <ExclamationTriangleIcon className="h-4 w-4" />
-                  {payError}
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm text-neutral-600">
-              <LockClosedIcon className="mt-0.5 h-5 w-5 text-neutral-500" />
-              <p>
-                Payments are held securely and only released after the photographer
-                confirms delivery.
+          <section
+            className="mt-6 rounded-2xl border p-6 text-white"
+            style={paymentCardStyle}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <p className="font-display text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/70">
+                Total due
+              </p>
+              <p className="shrink-0 text-right text-[12px] text-white/70">
+                Due {formatDate(activeSchedule?.dueDate)}
               </p>
             </div>
-          </section>
-
-          <aside className="space-y-4">
-            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
-                Order summary
-              </p>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span>Total amount</span>
-                <span className="font-semibold text-neutral-900">
-                  {formatCurrency(intent.totalAmount, intent.currency)}
-                </span>
-              </div>
-              <div className="mt-2 text-xs text-neutral-500">
-                {intent.requireDeposit
-                  ? 'Split into deposit and remainder payments.'
-                  : 'Single payment required.'}
-              </div>
-              {providerName && (
-                <div className="mt-4 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
-                  You are paying {providerName}.
-                </div>
-              )}
-              <div className="mt-4 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs text-neutral-500">
-                Payment reference: {intent.slug ?? intent.publicId}
-              </div>
-            </div>
+            <p className="font-display mt-3 text-[44px] font-medium leading-none tracking-normal text-white">
+              {formatCurrency(intent.totalAmount, intent.currency)}
+            </p>
 
             <div
-              className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
-                isPaid
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  : 'border-neutral-200 bg-white text-neutral-600'
+              className={`mt-7 grid rounded-xl border border-white/20 bg-white/10 p-1 text-[13px] ${
+                schedules.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
               }`}
             >
-              {isPaid
-                ? 'Payment received. Thank you!'
-                : 'Complete payment to secure the booking.'}
+              <button
+                type="button"
+                className={`h-10 rounded-lg font-medium transition ${
+                  isPrimaryOptionSelected
+                    ? 'bg-white text-[#7e49f0] shadow-sm'
+                    : 'text-white/75 hover:text-white'
+                }`}
+              >
+                {paymentOptionLabel}
+              </button>
+              {schedules.length > 1 && (
+                <button
+                  type="button"
+                  className={`h-10 rounded-lg font-medium transition ${
+                    activeSchedule?.type === 'full'
+                      ? 'bg-white text-[#7e49f0] shadow-sm'
+                      : 'text-white/75 hover:text-white'
+                  }`}
+                >
+                  Pay in full
+                </button>
+              )}
             </div>
-          </aside>
-        </div>
-      </main>
-    </div>
+
+            <div className="mt-7 flex items-end justify-between gap-4">
+              <div>
+                <p className="font-display text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/70">
+                  You pay today
+                </p>
+                <p className="mt-2 text-[12px] text-white/60">
+                  {remainingAmount > 0 ? 'Balance after shoot.' : 'Payment completes this invoice.'}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-display text-[28px] font-medium tracking-normal text-white">
+                  {formatCurrency(activeAmount, intent.currency)}
+                </p>
+                {remainingAmount > 0 && (
+                  <p className="mt-1 text-[11.5px] text-white/60">
+                    {formatCurrency(remainingAmount, intent.currency)}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {activeSchedule && (
+              <button
+                type="button"
+                onClick={() => handlePaySchedule(activeSchedule)}
+                disabled={
+                  payingScheduleId === activeSchedule.id ||
+                  activeSchedule.status === 'paid'
+                }
+                className="font-display mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#7e49f0] shadow-[0_14px_36px_rgba(39,10,90,0.18)] transition hover:bg-white/95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {payingScheduleId === activeSchedule.id ? (
+                  'Redirecting...'
+                ) : (
+                  <>
+                    <span>Pay {formatCurrency(activeAmount, intent.currency)} with</span>
+                    <PaystackLogoPill className="h-7" />
+                  </>
+                )}
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
+            )}
+
+            <p className="mt-4 text-center text-[11.5px] text-white/70">
+              Card, EFT, or mobile money — no account needed.
+            </p>
+            {payError && <p className="mt-4 rounded-lg bg-white/10 p-3 text-[12px] text-white">{payError}</p>}
+          </section>
+
+          <footer className="mt-8 border-t border-[var(--app-border)] py-6 text-center text-[11.5px] text-[var(--app-muted)]">
+            <p className="inline-flex flex-wrap items-center justify-center gap-2">
+              <ShieldCheckIcon className="h-4 w-4" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">Secured by Paystack</span>
+              <PaystackLogoPill />
+            </p>
+            <p className="mt-3">Powered by dfn!</p>
+          </footer>
+        </section>
+      </div>
+    </main>
   );
 }

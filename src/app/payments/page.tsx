@@ -131,7 +131,7 @@ function PaymentsPageContent() {
   }
 
   return (
-    <div className="bg-white min-h-screen text-black">
+    <div className="theme-midnight bg-white min-h-screen text-black">
       {/* Header */}
       <header className="border-b border-black px-6 py-6 sm:px-10">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Payments</h1>

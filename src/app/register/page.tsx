@@ -103,7 +103,7 @@ useEffect(() => {
     'text-black placeholder:text-gray-400 border-red-300 focus:ring-2 focus:ring-red-600 focus:border-red-600';
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="theme-midnight flex min-h-screen flex-col bg-gray-50">
       {isClient && (
         <Dialog
           open={isSubmitting}

@@ -26,7 +26,7 @@ type NavItem = {
 }
 
 const mainNav: NavItem[] = [
-  { name: 'Create payment request', icon: PlusIcon, href: '/create-payment-link' },
+  { name: 'Create payment link', icon: PlusIcon, href: '/create-payment-link' },
   { name: 'Home', icon: HomeIcon, href: '/home' },
   { name: 'Dashboard', icon: ClockIcon, href: '/transactions' },
 ]
@@ -137,6 +137,9 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     setActive(resolved);
   }, [pathname]);
 
+  const isFullBleedRoute =
+    pathname?.startsWith('/create-payment-link') || pathname?.startsWith('/transactions');
+
   const renderNavItem = (item: NavItem) => {
     const isActive = active === item.name;
     const isLogout = item.name === 'Logout';
@@ -168,15 +171,17 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           }}
           disabled={isLogout && isLoggingOut}
           className={classNames(
-            isActive ? 'bg-gray-50' : 'hover:bg-gray-50',
-            'group flex w-full items-center gap-x-3 rounded-md px-3 py-2 text-left text-sm font-medium text-gray-700 transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-300 dark:hover:bg-white/5 dark:bg-transparent'
+            isActive
+              ? 'bg-[var(--app-accent-soft)] text-[var(--app-foreground)] shadow-[inset_0_0_0_1px_var(--app-border-soft)]'
+              : 'hover:bg-[rgba(255,255,255,0.04)]',
+            'group flex w-full items-center gap-x-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[var(--app-muted)] transition disabled:cursor-not-allowed disabled:opacity-60'
           )}
         >
           <item.icon
             aria-hidden="true"
             className={classNames(
-              'h-5 w-5 shrink-0 text-black',
-              isActive ? 'text-black' : 'group-hover:text-black'
+              'h-5 w-5 shrink-0',
+              isActive ? 'text-[var(--app-accent-strong)]' : 'text-[var(--app-muted)] group-hover:text-[var(--app-foreground)]'
             )}
           />
           {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
@@ -186,30 +191,30 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="relative">
+    <div className="dfn-indigo-page relative min-h-screen text-[var(--app-foreground)]">
       <Dialog open={isLoggingOut} onClose={() => {}} className="relative z-[90]">
         <DialogBackdrop
           transition
-          className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-200"
+          className="fixed inset-0 bg-[#030611]/70 backdrop-blur-sm transition-opacity data-[closed]:opacity-0 data-[enter]:duration-150 data-[leave]:duration-200"
         />
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
           <DialogPanel
             transition
-            className="w-full max-w-xs transform rounded-2xl bg-white px-6 py-8 text-center shadow-xl transition-all data-[closed]:scale-95 data-[closed]:opacity-0 dark:bg-gray-900/95 dark:text-white"
+            className="w-full max-w-xs transform rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-8 text-center shadow-[var(--app-shadow)] transition-all data-[closed]:scale-95 data-[closed]:opacity-0"
           >
-            <ClockIcon className="mx-auto h-10 w-10 animate-spin text-gray-900 dark:text-white" />
-            <p className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Signing out…</p>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">We’ll be right here when you get back.</p>
+            <ClockIcon className="mx-auto h-10 w-10 animate-spin text-[var(--app-accent)]" />
+            <p className="mt-4 text-lg font-semibold text-[var(--app-foreground)]">Signing out…</p>
+            <p className="mt-2 text-sm text-[var(--app-muted-soft)]">We’ll be right here when you get back.</p>
           </DialogPanel>
         </div>
       </Dialog>
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 flex items-center justify-between bg-white px-4 py-3 dark:bg-gray-900 lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[var(--app-border)] bg-[rgba(5,7,19,0.88)] px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="text-gray-700 dark:text-white"
+            className="text-[var(--app-muted)]"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open navigation"
           >
@@ -217,7 +222,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           </button>
           <button
             type="button"
-            className="text-xl font-semibold text-black dark:text-white"
+            className="text-xl font-semibold text-[var(--app-foreground)]"
             onClick={() => router.push('/home')}
             aria-label="Go to home"
           >
@@ -226,7 +231,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
         </div>
         <button
           type="button"
-          className="text-gray-700 dark:text-white"
+          className="text-[var(--app-muted)]"
           onClick={() => router.push('/profile')}
           aria-label="Profile"
         >
@@ -237,12 +242,12 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       {/* Mobile sidebar */}
       <Dialog as="div" className="lg:hidden" open={sidebarOpen} onClose={setSidebarOpen}>
         <div className="fixed inset-0 z-50 flex">
-          <Dialog.Panel className="relative flex w-72 flex-col border-r border-gray-200 bg-white px-6 py-5 dark:border-white/10 dark:bg-gray-900">
-            <div className="flex items-center justify-between text-xl font-semibold text-black dark:text-white">
+          <Dialog.Panel className="relative flex w-72 flex-col border-r border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-5">
+            <div className="flex items-center justify-between text-xl font-semibold text-[var(--app-foreground)]">
               <span>dfn!.</span>
               <button
                 type="button"
-                className="text-gray-700 dark:text-white"
+                className="text-[var(--app-muted)]"
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Close navigation"
               >
@@ -255,7 +260,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
                   {mainNav.map(renderNavItem)}
                 </ul>
               </div>
-              <div className="my-4 border-t border-gray-200 dark:border-gray-700" />
+              <div className="my-4 border-t border-[var(--app-border)]" />
               <ul role="list" className="space-y-1">
                 {bottomNav.map(renderNavItem)}
               </ul>
@@ -271,13 +276,13 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'
         )}
       >
-        <div className="relative flex grow flex-col border-r border-gray-200 bg-white px-6 pb-4 dark:border-white/10 dark:bg-gray-900">
-          <div className="relative flex h-16 items-center justify-between text-2xl font-semibold text-black dark:text-white">
+        <div className="relative flex grow flex-col border-r border-[var(--app-border)] bg-[var(--app-surface)] px-6 pb-4">
+          <div className="relative flex h-16 items-center justify-between text-2xl font-semibold text-[var(--app-foreground)]">
             {!sidebarCollapsed && <span>dfn!.</span>}
             <button
               type="button"
               onClick={() => setSidebarCollapsed((prev) => !prev)}
-              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5"
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--app-muted)] transition hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--app-foreground)]"
               aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {sidebarCollapsed ? (
@@ -295,7 +300,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
                 </ul>
               </nav>
             </div>
-            <div className="my-4 border-t border-gray-200 dark:border-gray-700" />
+            <div className="my-4 border-t border-[var(--app-border)]" />
             <nav>
               <ul role="list" className="space-y-1">
                 {bottomNav.map(renderNavItem)}
@@ -307,7 +312,12 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <div className={classNames(sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72')}>
-        <main className="min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+        <main
+          className={classNames(
+            'min-h-screen',
+            isFullBleedRoute ? '' : 'px-4 py-10 sm:px-6 lg:px-8'
+          )}
+        >
           {children}
         </main>
       </div>

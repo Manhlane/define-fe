@@ -7,6 +7,23 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import DefineLayout from '../../components/DefineLayout';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 
+const homeFieldBaseClassName =
+  'w-full border bg-[var(--app-bg)] text-sm text-[var(--app-foreground)] placeholder:text-[var(--app-muted-soft)] focus:outline-none';
+
+function getHomeFieldClassName(hasError: boolean, className: string) {
+  return `${homeFieldBaseClassName} ${className} ${
+    hasError
+      ? 'border-[var(--app-danger-border)] focus:border-[var(--app-danger-fg)]'
+      : 'border-[var(--app-border)] focus:border-[var(--app-accent)]'
+  }`;
+}
+
+const homePrimaryActionClassName =
+  'flex h-11 w-full items-center justify-center rounded-lg bg-[var(--app-accent)] text-sm font-medium text-[var(--app-ink)] transition hover:bg-[var(--app-accent-strong)] disabled:opacity-70';
+
+const homeSecondaryActionClassName =
+  'flex h-11 w-full items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-sm font-medium text-[var(--app-foreground)] transition hover:bg-[var(--app-surface-elevated)]';
+
 export default function Home() {
   const router = useRouter();
   const [activeModal, setActiveModal] = useState<
@@ -71,13 +88,13 @@ export default function Home() {
 
   return (
     <DefineLayout>
-      <main className="relative min-h-screen overflow-hidden bg-white text-black">
+      <main className="dfn-indigo-page relative min-h-screen overflow-hidden text-[var(--app-foreground)]">
         <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16 text-center sm:px-10">
           <div className="space-y-3">
-            <p className="text-2xl font-semibold leading-tight tracking-tight text-black sm:text-4xl lg:text-5xl">
+            <p className="text-2xl font-semibold leading-tight tracking-tight text-[var(--app-foreground-strong)] sm:text-4xl lg:text-5xl">
               Create protected payment link
             </p>
-            <p className="text-sm text-black/70 sm:text-base">
+            <p className="text-sm text-[var(--app-muted)] sm:text-base">
               Secure escrow payments, release funds when delivery is confirmed, and keep every project protected from delays.
             </p>
           </div>
@@ -86,14 +103,14 @@ export default function Home() {
             <button
               type="button"
               onClick={openPaymentModal}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-neutral-900 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--app-accent)] px-5 py-3 text-sm font-medium text-[var(--app-ink)] transition hover:bg-[var(--app-accent-strong)] sm:w-auto"
             >
               Generate payment link
               <ArrowRightIcon className="h-4 w-4" />
             </button>
             <Link
               href="/transactions"
-              className="inline-flex w-full items-center justify-center rounded-lg border border-black px-5 py-3 text-sm font-medium text-black transition hover:bg-neutral-100 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-3 text-sm font-medium text-[var(--app-foreground)] transition hover:bg-[var(--app-surface-elevated)] sm:w-auto"
             >
               View transactions
             </Link>
@@ -107,15 +124,15 @@ export default function Home() {
         className="fixed inset-0 z-50"
       >
         <DialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
-        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-none bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto md:max-h-none md:overflow-visible md:max-w-lg">
+        <DialogPanel className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-none border border-[var(--app-border)] bg-[var(--app-surface)] p-6 text-[var(--app-foreground)] shadow-[var(--app-shadow)] md:max-h-none md:max-w-lg md:overflow-visible">
           {activeModal === 'payment' && (
             <>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Generate payment link</h3>
+                <h3 className="text-lg font-semibold text-[var(--app-foreground-strong)]">Generate payment link</h3>
                 <button
                   type="button"
                   onClick={closeActiveModal}
-                  className="text-sm text-neutral-500"
+                  className="text-sm text-[var(--app-muted-soft)] transition hover:text-[var(--app-foreground)]"
                 >
                   Close
                 </button>
@@ -137,11 +154,7 @@ export default function Home() {
                         amount: event.target.value,
                       }))
                     }
-                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
-                      paymentErrors.amount
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-300 focus:border-black'
-                    }`}
+                    className={getHomeFieldClassName(paymentErrors.amount, 'h-11 rounded-lg px-4')}
                   />
                 </div>
 
@@ -157,11 +170,7 @@ export default function Home() {
                         email: event.target.value,
                       }))
                     }
-                    className={`h-11 w-full rounded-full border px-4 text-sm focus:outline-none ${
-                      paymentErrors.email
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-300 focus:border-black'
-                    }`}
+                    className={getHomeFieldClassName(paymentErrors.email, 'h-11 rounded-lg px-4')}
                   />
                 </div>
 
@@ -177,11 +186,7 @@ export default function Home() {
                         description: event.target.value,
                       }))
                     }
-                    className={`w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none ${
-                      paymentErrors.description
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-neutral-300 focus:border-black'
-                    }`}
+                    className={getHomeFieldClassName(paymentErrors.description, 'rounded-lg px-4 py-3')}
                   />
                 </div>
 
@@ -196,7 +201,7 @@ export default function Home() {
                         deliveryDate: event.target.value,
                       }))
                     }
-                    className="h-11 w-full rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className={getHomeFieldClassName(false, 'h-11 rounded-lg px-4')}
                   />
                 </div>
 
@@ -210,7 +215,7 @@ export default function Home() {
                         autoRelease: event.target.value,
                       }))
                     }
-                    className="h-11 w-full appearance-none rounded-full border border-neutral-300 px-4 text-sm focus:border-black focus:outline-none"
+                    className={getHomeFieldClassName(false, 'h-11 appearance-none rounded-lg px-4')}
                   >
                     <option>3 days (recommended)</option>
                     <option>7 days</option>
@@ -220,18 +225,20 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900"
+                  className={homePrimaryActionClassName}
                 >
                   Generate Payment Link
                 </button>
 
-                <div className="pt-2 text-center text-xs text-neutral-500">
+                <div className="pt-2 text-center text-xs text-[var(--app-muted-soft)]">
                   Transactions powered by{' '}
-                  <img
-                    src="/images/paystack-2.svg"
-                    alt="Paystack"
-                    className="inline h-4 align-middle"
-                  />
+                  <span className="inline-flex h-6 items-center rounded-full bg-white px-2 align-middle">
+                    <img
+                      src="/images/paystack-2.svg"
+                      alt="Paystack"
+                      className="h-3.5 w-auto"
+                    />
+                  </span>
                 </div>
               </form>
             </>
@@ -240,44 +247,44 @@ export default function Home() {
           {activeModal === 'payment-preview' && (
             <>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Payment preview</h3>
+                <h3 className="text-lg font-semibold text-[var(--app-foreground-strong)]">Payment preview</h3>
                 <button
                   type="button"
                   onClick={closeActiveModal}
-                  className="text-sm text-neutral-500"
+                  className="text-sm text-[var(--app-muted-soft)] transition hover:text-[var(--app-foreground)]"
                 >
                   Close
                 </button>
               </div>
 
-              <div className="mt-5 space-y-3 text-sm text-neutral-700">
+              <div className="mt-5 space-y-3 text-sm text-[var(--app-muted)]">
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Amount (ZAR)</p>
-                  <p className="text-right text-base font-semibold text-black">
+                  <p className="text-sm font-normal tracking-wide text-[var(--app-muted-soft)]">Amount (ZAR)</p>
+                  <p className="text-right text-base font-semibold text-[var(--app-foreground-strong)]">
                     {paymentDraft.amount || '—'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Client Email</p>
-                  <p className="text-right text-base text-black">
+                  <p className="text-sm font-normal tracking-wide text-[var(--app-muted-soft)]">Client Email</p>
+                  <p className="text-right text-base text-[var(--app-foreground)]">
                     {paymentDraft.email || 'Not provided'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Description</p>
-                  <p className="text-right text-base text-black">
+                  <p className="text-sm font-normal tracking-wide text-[var(--app-muted-soft)]">Description</p>
+                  <p className="text-right text-base text-[var(--app-foreground)]">
                     {paymentDraft.description || '—'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Expected Delivery Date</p>
-                  <p className="text-right text-base text-black">
+                  <p className="text-sm font-normal tracking-wide text-[var(--app-muted-soft)]">Expected Delivery Date</p>
+                  <p className="text-right text-base text-[var(--app-foreground)]">
                     {paymentDraft.deliveryDate || 'Not set'}
                   </p>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <p className="text-sm font-normal tracking-wide text-neutral-500">Auto-Release After</p>
-                  <p className="text-right text-base text-black">
+                  <p className="text-sm font-normal tracking-wide text-[var(--app-muted-soft)]">Auto-Release After</p>
+                  <p className="text-right text-base text-[var(--app-foreground)]">
                     {paymentDraft.autoRelease || 'Not set'}
                   </p>
                 </div>
@@ -288,11 +295,11 @@ export default function Home() {
                   type="button"
                   onClick={() => setIsGeneratingLink(true)}
                   disabled={isGeneratingLink}
-                  className="flex h-11 w-full items-center justify-center rounded-full bg-black text-sm font-medium text-white hover:bg-neutral-900 disabled:opacity-70"
+                  className={homePrimaryActionClassName}
                 >
                   {isGeneratingLink ? (
                     <>
-                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-[rgba(8,16,31,0.3)] border-t-[var(--app-ink)]" />
                       Generating Payment Link
                     </>
                   ) : (
@@ -302,7 +309,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setActiveModal('payment')}
-                  className="flex h-11 w-full items-center justify-center rounded-full border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
+                  className={homeSecondaryActionClassName}
                 >
                   Edit payment details
                 </button>
