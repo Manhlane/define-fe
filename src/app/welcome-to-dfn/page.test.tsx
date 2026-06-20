@@ -1,28 +1,17 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import LandingPage from './page.client';
 
-const pushMock = jest.fn();
-
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: pushMock,
-  }),
-}));
-
 describe('LandingPage', () => {
-  it('navigates to the create page from the create payment link button', async () => {
+  it('links to the create page from the create payment link call to action', () => {
     render(<LandingPage />);
 
-    const user = userEvent.setup();
-    const openButton = screen.getByRole('button', { name: /create payment link/i });
-    await user.click(openButton);
+    const createLink = screen.getByRole('link', { name: /create payment link/i });
 
-    expect(pushMock).toHaveBeenCalledWith('/create-payment-link');
+    expect(createLink).toHaveAttribute('href', '/create-payment-link');
   });
 
-  it('navigates to the auth page from the sign in button', async () => {
+  it('links to the auth page from the sign in call to action', () => {
     render(<LandingPage />);
 
     const signInLink = screen.getByRole('link', { name: /sign in/i });
