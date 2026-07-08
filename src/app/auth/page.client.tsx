@@ -25,7 +25,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
 
 const AUTH_BASE_URL =
-  process.env.NEXT_PUBLIC_AUTH_URL ?? 'https://34.251.72.37:3000/api/auth';
+  process.env.NEXT_PUBLIC_AUTH_URL ?? 'https://joindfn.com/api/auth';
 
 const LOGIN_URL = `${AUTH_BASE_URL}/login`;
 const REGISTER_URL = `${AUTH_BASE_URL}/register`;
