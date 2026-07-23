@@ -21,7 +21,7 @@ jobs:
       CONTAINER_NAME: define-fe
       APP_PORT: "3002"
       CONTAINER_PORT: "3000"
-      ENV_FILE_PATH: "/home/ec2-user/.prod/fe.p.env"
+      ENV_FILE_PATH: "/home/ec2-user/.dev/fe.d.env"
       DOCKER_NETWORK: "dfn-network"
     steps:
       - name: Checkout
