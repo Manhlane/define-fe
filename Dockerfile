@@ -11,6 +11,19 @@ RUN npm ci
 
 FROM deps AS build
 COPY . .
+# Default to production URLs.
+# These can still be overridden with --build-arg during docker build.
+
+ARG NEXT_PUBLIC_APP_URL=https://joindfn.com
+ARG NEXT_PUBLIC_AUTH_URL=https://joindfn.com/auth
+ARG NEXT_PUBLIC_NOTIFICATIONS_URL=https://joindfn.com/notifications
+ARG NEXT_PUBLIC_PAYMENTS_URL=https://joindfn.com/payments
+
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_AUTH_URL=${NEXT_PUBLIC_AUTH_URL}
+ENV NEXT_PUBLIC_NOTIFICATIONS_URL=${NEXT_PUBLIC_NOTIFICATIONS_URL}
+ENV NEXT_PUBLIC_PAYMENTS_URL=${NEXT_PUBLIC_PAYMENTS_URL}
+
 # Build standalone output to drop dev dependencies in the final image
 RUN NEXT_TELEMETRY_DISABLED=1 npm run build
 
