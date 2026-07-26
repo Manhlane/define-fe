@@ -466,7 +466,7 @@ export default function MobileAuthPageClient() {
                         onClick={() => setModeAndSync('register')}
                         className="font-medium text-[var(--app-accent-strong)] underline"
                       >
-                        New to dfn!.? Create your free account
+                        New to dfn!. Create your free account
                       </button>
                     </>
                   ) : (

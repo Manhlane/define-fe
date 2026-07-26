@@ -173,7 +173,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           className={classNames(
             isActive
               ? 'bg-[var(--app-accent-soft)] text-[var(--app-foreground)] shadow-[inset_0_0_0_1px_var(--app-border-soft)]'
-              : 'hover:bg-[rgba(255,255,255,0.04)]',
+              : 'hover:bg-[var(--app-hover-bg)]',
             'group flex w-full items-center gap-x-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[var(--app-muted)] transition disabled:cursor-not-allowed disabled:opacity-60'
           )}
         >
@@ -210,7 +210,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
       </Dialog>
 
       {/* Mobile header */}
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[var(--app-border)] bg-[rgba(5,7,19,0.88)] px-4 py-3 backdrop-blur lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-header-bg)] px-4 py-3 backdrop-blur lg:hidden">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -282,7 +282,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={() => setSidebarCollapsed((prev) => !prev)}
-              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--app-muted)] transition hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--app-foreground)]"
+              className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--app-muted)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-foreground)]"
               aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {sidebarCollapsed ? (

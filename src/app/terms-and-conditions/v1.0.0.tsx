@@ -1,9 +1,21 @@
 import React from "react";
+import Link from "next/link";
+import { X } from "lucide-react";
 
 export default function TermsV1() {
   return (
     <div className="theme-midnight min-h-screen bg-[var(--app-bg)] px-6 py-12 text-[var(--app-foreground)]">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-8 flex justify-end">
+          <Link
+            href="/welcome-to-dfn"
+            aria-label="Close terms and conditions"
+            className="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-muted-soft)] transition-colors hover:bg-[var(--app-surface-strong)] hover:text-[var(--app-foreground-strong)]"
+          >
+            <X className="h-4 w-4 transition-transform group-hover:rotate-90" />
+          </Link>
+        </div>
+
         <h1 className="mb-4 text-4xl font-bold text-[var(--app-foreground-strong)]">Terms of Service</h1>
         <p className="mb-8 text-sm text-[var(--app-muted)]">
           Effective Date: 19 February 2026 <br />
@@ -14,30 +26,30 @@ export default function TermsV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">1. Introduction</h2>
             <p>
-              Welcome to define! (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;). By creating an account
-              or using define!, you agree to these Terms of Service. If you do
+              Welcome to dfn!. (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;). By creating an account
+              or using dfn!., you agree to these Terms of Service. If you do
               not agree, you may not use the platform.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-2">2. What define! Does</h2>
+            <h2 className="text-xl font-semibold mb-2">2. What dfn!. Does</h2>
             <p>
-              define! provides a payment link platform that allows service
+              dfn!. provides a payment link platform that allows service
               providers (such as photographers and freelancers) to collect
               payments from clients before a service is delivered.
             </p>
             <p>
-              define! may temporarily hold funds until delivery conditions
+              dfn!. may temporarily hold funds until delivery conditions
               are met or until an agreed auto-release period has passed.
-              define! is not a bank. Payments are processed through third-party
+              dfn!. is not a bank. Payments are processed through third-party
               payment providers, including but not limited to Paystack.
             </p>
           </div>
 
           <div>
             <h2 className="text-xl font-semibold mb-2">3. Eligibility</h2>
-            <p>To use define!, you must:</p>
+            <p>To use dfn!., you must:</p>
             <ul className="list-disc pl-6">
               <li>Be at least 18 years old</li>
               <li>Provide accurate and truthful information</li>
@@ -51,14 +63,14 @@ export default function TermsV1() {
 
           <div>
             <h2 className="text-xl font-semibold mb-2">4. Payments & Escrow</h2>
-            <p>When a client makes payment through a define! payment link:</p>
+            <p>When a client makes payment through a dfn!. payment link:</p>
             <ul className="list-disc pl-6">
               <li>Funds may be held temporarily</li>
               <li>Funds may be released after delivery or based on selected auto-release settings</li>
               <li>Funds may be delayed if a dispute is raised</li>
             </ul>
             <p>
-              define! does not guarantee service quality, performance, or
+              dfn!. does not guarantee service quality, performance, or
               delivery outcomes. The service provider remains responsible for
               delivering the service as agreed with the client.
             </p>
@@ -67,7 +79,7 @@ export default function TermsV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">5. Fees</h2>
             <p>
-              define! may charge a platform fee per transaction. Payment
+              dfn!. may charge a platform fee per transaction. Payment
               processors may charge additional processing fees.
             </p>
             <p>
@@ -82,16 +94,16 @@ export default function TermsV1() {
             <ul className="list-disc pl-6">
               <li>Funds may be temporarily held</li>
               <li>Both parties may be asked to provide evidence</li>
-              <li>define! may make a determination regarding fund release</li>
+              <li>dfn!. may make a determination regarding fund release</li>
             </ul>
             <p>
-              define!’s decision regarding fund release is final, subject to
+              dfn!.’s decision regarding fund release is final, subject to
               applicable law.
             </p>
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-2">7. Refunds</h2>
+            <h2 id="refunds" className="scroll-mt-8 text-xl font-semibold mb-2">7. Refunds</h2>
             <p>Refunds may be issued:</p>
             <ul className="list-disc pl-6">
               <li>If both parties agree</li>
@@ -117,12 +129,12 @@ export default function TermsV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">9. Limitation of Liability</h2>
             <p>
-              define! is not liable for indirect, incidental, or consequential
+              dfn!. is not liable for indirect, incidental, or consequential
               damages, including but not limited to loss of income, missed
               bookings, or service disputes.
             </p>
             <p>
-              define!’s total liability shall not exceed the total platform
+              dfn!.’s total liability shall not exceed the total platform
               fees paid by the user in the preceding three (3) months.
             </p>
           </div>
@@ -130,7 +142,7 @@ export default function TermsV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">10. Data & Privacy</h2>
             <p>
-              Your use of define! is also governed by our Privacy Policy.
+              Your use of dfn!. is also governed by our Privacy Policy.
               By using the platform, you consent to the collection and use of
               information as described therein.
             </p>
@@ -155,7 +167,7 @@ export default function TermsV1() {
         </section>
 
         <div className="mt-12 text-sm text-gray-500">
-          © 2026 define!. (dfn!.) All rights reserved.
+          © 2026 dfn!. All rights reserved.
         </div>
       </div>
     </div>

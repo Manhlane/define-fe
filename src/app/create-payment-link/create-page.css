@@ -25,14 +25,55 @@
   --destructive: #7f314d;
   --destructive-foreground: #fff1f5;
 
+  --create-topbar: rgba(5, 7, 19, 0.94);
+  --create-topbar-border: rgba(139, 92, 246, 0.2);
+  --create-compose-bg: linear-gradient(180deg, #070914 0%, #050713 54%, #030511 100%);
+  --create-control-bg: rgba(255, 255, 255, 0.02);
+  --create-control-hover: rgba(255, 255, 255, 0.05);
+  --create-date-placeholder: rgba(238, 242, 255, 0.46);
+  --create-slider-track: #2a3760;
+  --create-summary-bg: linear-gradient(180deg, #121938 0%, #0d1226 100%);
+
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
 
   min-height: 100vh;
-  background: #050713;
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+html[data-theme='daytime'] .dfn-create-page {
+  --background: #f7f8ff;
+  --foreground: #202846;
+  --surface: #f1f3fd;
+  --card: #ffffff;
+  --card-foreground: #171e3a;
+
+  --primary: #6b62e9;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0fb;
+  --secondary-foreground: #293250;
+  --muted: #eef0fb;
+  --muted-foreground: #68718d;
+  --accent: #e4e7f8;
+  --accent-foreground: #1d2543;
+
+  --border: #cbd1e7;
+  --input: #cbd1e7;
+  --ring: #696ff2;
+
+  --create-topbar: rgba(250, 251, 255, 0.92);
+  --create-topbar-border: rgba(98, 104, 245, 0.18);
+  --create-compose-bg:
+    radial-gradient(circle at 8% 0%, rgba(98, 104, 245, 0.07), transparent 28%),
+    linear-gradient(180deg, #fbfbff 0%, #f5f6ff 58%, #eef1ff 100%);
+  --create-control-bg: rgba(98, 104, 245, 0.04);
+  --create-control-hover: rgba(98, 104, 245, 0.09);
+  --create-date-placeholder: rgba(34, 43, 76, 0.5);
+  --create-slider-track: #d9def1;
+  --create-summary-bg: linear-gradient(180deg, #ffffff 0%, #f1f3fd 100%);
 }
 
 .dfn-create-page,
@@ -65,20 +106,22 @@
 }
 
 .dfn-topbar {
-  background: rgba(5, 7, 19, 0.94);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--create-topbar);
+  border-bottom: 1px solid var(--create-topbar-border);
   backdrop-filter: blur(18px);
 }
 
 .dfn-compose-pane {
-  background: linear-gradient(180deg, #070914 0%, #050713 54%, #030511 100%);
+  background: var(--create-compose-bg);
 }
 
 .dfn-preview-rail {
+  --app-foreground-strong: #ffffff;
   background:
     radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 28%),
     radial-gradient(circle at 20% 15%, rgba(188, 151, 255, 0.22), transparent 24%),
     linear-gradient(180deg, #945cf8 0%, #844cf2 46%, #7a45ed 100%);
+  color: #ffffff;
   box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -169,7 +212,7 @@
 }
 
 .dfn-date-display {
-  color: rgba(238, 242, 255, 0.46);
+  color: var(--create-date-placeholder);
   font-weight: 400;
 }
 
@@ -244,14 +287,22 @@
   background: linear-gradient(180deg, #a278ff 0%, #8e60f4 100%);
 }
 
+.dfn-create-page .dfn-topbar-draft {
+  display: none;
+}
+
+.dfn-create-page .dfn-btn-primary {
+  color: #ffffff !important;
+}
+
 .dfn-btn-secondary {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--create-control-bg);
   border-color: rgba(139, 92, 246, 0.24);
   color: var(--foreground);
 }
 
 .dfn-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--create-control-hover);
 }
 
 .dfn-btn-ghost {
@@ -271,13 +322,13 @@
   place-items: center;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--create-control-bg);
   color: var(--muted-foreground);
   cursor: pointer;
 }
 
 .dfn-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--create-control-hover);
   color: var(--foreground);
 }
 
@@ -330,8 +381,8 @@
     to right,
     var(--primary) 0%,
     var(--primary) var(--val, 50%),
-    #2a3760 var(--val, 50%),
-    #2a3760 100%
+    var(--create-slider-track) var(--val, 50%),
+    var(--create-slider-track) 100%
   );
   outline: none;
 }
@@ -385,8 +436,33 @@
   top: 24px;
   padding: 24px;
   border-radius: 16px;
-  background: linear-gradient(180deg, #121938 0%, #0d1226 100%);
+  background: var(--create-summary-bg);
   color: var(--foreground);
+}
+
+@media (min-width: 640px) {
+  .dfn-create-page .dfn-topbar-draft {
+    display: inline-flex;
+  }
+}
+
+.dfn-create-page .dfn-inverse-control,
+.dfn-send-icon {
+  color: #ffffff !important;
+}
+
+.dfn-success-panel {
+  --app-foreground-strong: #ffffff;
+}
+
+html[data-theme='daytime'] .dfn-success-panel {
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(148, 116, 255, 0.24), transparent 32%),
+    linear-gradient(145deg, #25215e 0%, #181d4d 100%);
+  box-shadow: 0 24px 64px rgba(47, 51, 111, 0.2);
 }
 
 .dfn-summary .amount {

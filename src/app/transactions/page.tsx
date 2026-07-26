@@ -559,11 +559,13 @@ function getScheduleStatusLabel(status?: string) {
 
 function scheduleBadgeClasses(status?: string) {
   const normalized = normalizeScheduleStatus(status);
-  if (normalized === 'paid') return 'bg-[var(--app-foreground)] text-[var(--app-ink)]';
-  if (normalized === 'overdue') {
-    return 'border border-[rgba(238,242,255,0.7)] bg-transparent text-[var(--app-foreground)]';
+  if (normalized === 'paid') {
+    return 'bg-[var(--app-inverse-bg)] text-[var(--app-inverse-fg)]';
   }
-  return 'border border-dashed border-[rgba(238,242,255,0.48)] bg-transparent text-[var(--app-foreground)]';
+  if (normalized === 'overdue') {
+    return 'border border-[var(--app-danger-border)] bg-[var(--app-danger-bg)] text-[var(--app-danger-fg)]';
+  }
+  return 'border border-dashed border-[var(--app-muted-soft)] bg-transparent text-[var(--app-foreground)]';
 }
 
 function toTransactionRow(
@@ -593,21 +595,21 @@ function toTransactionRow(
 
 function statusBadgeClasses(status: TransactionStatus) {
   if (status === 'draft') {
-    return 'border border-dashed border-[rgba(238,242,255,0.38)] bg-transparent text-[var(--app-muted)]';
+    return 'border border-dashed border-[var(--app-border)] bg-transparent text-[var(--app-muted)]';
   }
   if (status === 'pending') {
-    return 'border border-dashed border-[rgba(238,242,255,0.52)] bg-transparent text-[var(--app-foreground)]';
+    return 'border border-dashed border-[var(--app-muted-soft)] bg-transparent text-[var(--app-foreground)]';
   }
   if (status === 'partially_paid') {
-    return 'border border-[rgba(167,139,250,0.52)] bg-[rgba(139,92,246,0.16)] text-[#ddd6fe]';
+    return 'border border-[var(--app-border-soft)] bg-[var(--app-accent-soft)] text-[var(--app-accent-strong)]';
   }
   if (status === 'completed') {
-    return 'border border-[rgba(52,211,153,0.45)] bg-[rgba(16,185,129,0.15)] text-[#bbf7d0]';
+    return 'border border-[var(--app-success-border)] bg-[var(--app-success-bg)] text-[var(--app-success-fg)]';
   }
   if (status === 'disputed') {
-    return 'border border-[rgba(248,113,113,0.46)] bg-[rgba(239,68,68,0.14)] text-[#fecaca]';
+    return 'border border-[var(--app-danger-border)] bg-[var(--app-danger-bg)] text-[var(--app-danger-fg)]';
   }
-  return 'bg-[var(--app-foreground)] text-[var(--app-ink)]';
+  return 'bg-[var(--app-inverse-bg)] text-[var(--app-inverse-fg)]';
 }
 
 function StatusIcon({ status }: { status: TransactionStatus }) {
@@ -679,7 +681,7 @@ function PaymentIntentDetailView({
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-foreground)]">
-      <header className="flex h-[46px] items-center justify-between border-b border-[var(--app-border)] bg-[rgba(5,7,19,0.96)] px-6 lg:px-8">
+      <header className="flex h-[46px] items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-header-bg)] px-4 backdrop-blur lg:px-8">
         <h1 className="text-[15px] font-semibold text-[var(--app-foreground-strong)]">
           Payment intent
         </h1>
@@ -702,11 +704,11 @@ function PaymentIntentDetailView({
         </div>
       </header>
 
-      <main className="px-6 py-8 lg:px-8">
-        <section className="overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[rgba(3,5,17,0.72)]">
-          <div className="grid gap-6 px-6 py-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8">
+      <main className="px-4 py-7 lg:px-8 lg:py-8">
+        <section className="transactions-detail-card overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-glass)] shadow-[var(--app-shadow)]">
+          <div className="grid gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8">
             <div className="flex min-w-0 gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[rgba(255,255,255,0.04)] text-[14px] font-semibold text-[var(--app-foreground)]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-surface-elevated)] text-[13px] font-semibold text-[var(--app-foreground)] sm:h-14 sm:w-14 sm:text-[14px]">
                 {getInitials(clientName)}
               </div>
               <div className="min-w-0">
@@ -714,7 +716,7 @@ function PaymentIntentDetailView({
                   <h2 className="text-[22px] font-semibold leading-tight text-[var(--app-foreground-strong)]">
                     {clientName}
                   </h2>
-                  <span className="inline-flex h-6 items-center rounded-full border border-[rgba(238,242,255,0.28)] bg-[rgba(255,255,255,0.06)] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--app-foreground)]">
+                  <span className="inline-flex h-6 items-center rounded-full border border-[var(--app-border)] bg-[var(--app-surface-soft)] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--app-foreground)]">
                     {stateLabel}
                   </span>
                 </div>
@@ -723,9 +725,9 @@ function PaymentIntentDetailView({
                   {shootDate !== 'No date' ? ` · Shoot ${shootDate}` : ''}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-[var(--app-muted)]">
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
                     <Mail className="h-4 w-4" />
-                    {clientEmail}
+                    <span className="min-w-0 break-all">{clientEmail}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Phone className="h-4 w-4" />
@@ -748,14 +750,14 @@ function PaymentIntentDetailView({
             </div>
           </div>
 
-          <div className="border-t border-[var(--app-border)] bg-[rgba(255,255,255,0.03)] px-6 py-5 lg:px-8">
+          <div className="border-t border-[var(--app-border)] bg-[var(--app-panel-subtle)] px-4 py-5 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--app-muted)]">
               <span>Collection progress</span>
               <span>{progress}%</span>
             </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[rgba(238,242,255,0.16)]">
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--app-progress-track)]">
               <div
-                className="h-full rounded-full bg-[var(--app-foreground)]"
+                className="h-full rounded-full bg-[var(--app-accent-alt)]"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -788,14 +790,14 @@ function PaymentIntentDetailView({
               return (
                 <article
                   key={schedule.id || `${row.id}-schedule-${index}`}
-                  className="grid gap-4 rounded-[14px] border border-[var(--app-border)] bg-[rgba(3,5,17,0.72)] px-5 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  className="grid gap-4 rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-glass)] px-4 py-5 shadow-[0_12px_32px_rgba(31,38,86,0.04)] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5"
                 >
                   <div className="flex min-w-0 gap-4">
                     <div
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-[13px] font-semibold ${
                         isPaid
-                          ? 'border-[var(--app-foreground)] bg-[var(--app-foreground)] text-[var(--app-ink)]'
-                          : 'border-[var(--app-border)] bg-[rgba(255,255,255,0.04)] text-[var(--app-foreground)]'
+                          ? 'border-[var(--app-inverse-bg)] bg-[var(--app-inverse-bg)] text-[var(--app-inverse-fg)]'
+                          : 'border-[var(--app-border)] bg-[var(--app-surface-elevated)] text-[var(--app-foreground)]'
                       }`}
                     >
                       {isPaid ? <Check className="h-4 w-4" /> : index + 1}
@@ -805,7 +807,7 @@ function PaymentIntentDetailView({
                         <h3 className="text-[15px] font-semibold text-[var(--app-foreground-strong)]">
                           {getScheduleTitle(schedule, index, schedules.length)}
                         </h3>
-                        <span className="inline-flex h-6 items-center rounded-full bg-[rgba(238,242,255,0.1)] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
+                        <span className="inline-flex h-6 items-center rounded-full bg-[var(--app-surface-soft)] px-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">
                           {getScheduleTypeLabel(schedule.type)}
                         </span>
                         <span
@@ -861,7 +863,7 @@ function PaymentIntentDetailView({
                         href={actionHref}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--app-foreground)] px-2.5 text-[11px] font-semibold text-[var(--app-ink)] transition hover:bg-white/90"
+                        className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--app-inverse-bg)] px-2.5 text-[11px] font-semibold text-[var(--app-inverse-fg)] transition hover:opacity-90"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         Pay link
@@ -887,11 +889,11 @@ function PaymentIntentDetailView({
           {[
             ['Intent ID', intentReference],
             ['Created', createdDate],
-            ['Escrow', 'Funds secured by dfn!'],
+            ['Escrow', 'Funds secured by dfn!.'],
           ].map(([label, value]) => (
             <div
               key={label}
-              className="rounded-[14px] border border-[var(--app-border)] bg-[rgba(3,5,17,0.72)] px-4 py-4"
+              className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-glass)] px-4 py-4"
             >
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--app-muted)]">
                 {label}
@@ -1083,7 +1085,7 @@ export default function TransactionsPage() {
         />
       ) : (
       <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-foreground)]">
-        <header className="flex h-[46px] items-center justify-between border-b border-[var(--app-border)] bg-[rgba(5,7,19,0.96)] px-6 lg:px-8">
+        <header className="flex h-[46px] items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-header-bg)] px-4 backdrop-blur lg:px-8">
           <h1 className="text-[15px] font-semibold text-[var(--app-foreground-strong)]">
             Transactions
           </h1>
@@ -1091,7 +1093,7 @@ export default function TransactionsPage() {
             <button
               type="button"
               onClick={() => downloadCsv(filteredTransactions)}
-              className="inline-flex h-9 items-center gap-2 rounded-xl bg-[var(--app-foreground)] px-3.5 text-[12px] font-semibold text-[var(--app-ink)] transition hover:bg-white/90"
+              className="inline-flex h-9 items-center gap-2 rounded-xl bg-[var(--app-inverse-bg)] px-3.5 text-[12px] font-semibold text-[var(--app-inverse-fg)] transition hover:opacity-90"
             >
               <Download className="h-4 w-4" />
               Export CSV
@@ -1106,8 +1108,8 @@ export default function TransactionsPage() {
           </div>
         </header>
 
-        <main className="px-6 py-8 lg:px-8">
-          <section className="grid gap-6 rounded-[14px] bg-[var(--app-foreground)] px-5 py-5 text-[var(--app-ink)] sm:grid-cols-2 lg:grid-cols-4 lg:px-5">
+        <main className="px-4 py-7 lg:px-8 lg:py-8">
+          <section className="transactions-summary grid grid-cols-2 gap-x-4 gap-y-7 rounded-[14px] bg-[var(--app-inverse-bg)] px-5 py-5 text-[var(--app-inverse-fg)] shadow-[var(--app-shadow)] lg:grid-cols-4 lg:px-5">
             {[
               ['Received', summary.received],
               ['Paid out', summary.paidOut],
@@ -1115,10 +1117,10 @@ export default function TransactionsPage() {
               ['Disputed', summary.disputed],
             ].map(([label, value]) => (
               <div key={label as string} className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/55">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--app-inverse-muted)]">
                   {label as string}
                 </p>
-                <p className="mt-4 text-[25px] font-semibold leading-none tracking-normal text-[#202436]">
+                <p className="mt-4 text-[25px] font-semibold leading-none tracking-normal text-[var(--app-inverse-fg)]">
                   {formatZar(value as number)}
                 </p>
               </div>
@@ -1126,7 +1128,7 @@ export default function TransactionsPage() {
           </section>
 
           <section className="mt-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap gap-2">
+            <div className="mobile-scrollbar-none -mx-4 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0 lg:pb-0">
               {statusFilters.map((filter) => {
                 const isActive = activeStatus === filter.key;
                 const count = counts[filter.key];
@@ -1135,17 +1137,17 @@ export default function TransactionsPage() {
                     key={filter.key}
                     type="button"
                     onClick={() => setActiveStatus(filter.key)}
-                    className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-[12px] font-medium transition ${
+                    className={`inline-flex h-8 shrink-0 items-center gap-2 rounded-full border px-3 text-[12px] font-medium transition ${
                       isActive
-                        ? 'border-[var(--app-foreground)] bg-[var(--app-foreground)] text-[var(--app-ink)]'
-                        : 'border-[var(--app-border)] bg-[rgba(255,255,255,0.02)] text-[var(--app-muted)] hover:border-[var(--app-accent)] hover:text-[var(--app-foreground)]'
+                        ? 'border-[var(--app-inverse-bg)] bg-[var(--app-inverse-bg)] text-[var(--app-inverse-fg)]'
+                        : 'border-[var(--app-border)] bg-[var(--app-panel-subtle)] text-[var(--app-muted)] hover:border-[var(--app-accent)] hover:text-[var(--app-foreground)]'
                     }`}
                   >
                     <span>{filter.label}</span>
                     <span
                       className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] ${
                         isActive
-                          ? 'bg-black/10 text-[var(--app-ink)]'
+                          ? 'bg-[var(--app-inverse-soft)] text-[var(--app-inverse-fg)]'
                           : 'bg-[var(--app-surface-soft)] text-[var(--app-muted)]'
                       }`}
                     >
@@ -1164,7 +1166,7 @@ export default function TransactionsPage() {
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search..."
-                  className="h-10 w-full rounded-xl border border-[var(--app-border)] bg-[rgba(3,5,17,0.82)] pl-9 pr-3 text-[13px] text-[var(--app-foreground)] outline-none transition placeholder:text-[var(--app-muted-soft)] focus:border-[var(--app-accent)]"
+                  className="transactions-search h-10 w-full rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-glass)] pl-9 pr-3 text-[13px] text-[var(--app-foreground)] outline-none transition placeholder:text-[var(--app-muted-soft)] focus:border-[var(--app-accent)]"
                 />
               </label>
               <button
@@ -1200,7 +1202,7 @@ export default function TransactionsPage() {
                     key={row.id}
                     className={`grid min-h-[76px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-1 py-4 text-left transition ${
                       row.direction === 'received'
-                        ? 'cursor-pointer hover:bg-[rgba(255,255,255,0.025)]'
+                        ? 'transactions-row cursor-pointer hover:bg-[var(--app-row-hover)]'
                         : ''
                     }`}
                     role={row.direction === 'received' ? 'button' : undefined}
@@ -1218,10 +1220,10 @@ export default function TransactionsPage() {
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="relative h-11 w-11 shrink-0">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--app-border)] bg-[rgba(3,5,17,0.72)] text-[12px] font-semibold text-[var(--app-foreground)]">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--app-border)] bg-[var(--app-panel-glass)] text-[12px] font-semibold text-[var(--app-foreground)]">
                           {row.initials}
                         </div>
-                        <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--app-bg)] bg-[var(--app-foreground)] text-[var(--app-ink)]">
+                        <span className="absolute -bottom-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--app-bg)] bg-[var(--app-inverse-bg)] text-[var(--app-inverse-fg)]">
                           {row.direction === 'payout' ? (
                             <ArrowUpRight className="h-3 w-3" />
                           ) : (

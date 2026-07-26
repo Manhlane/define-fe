@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -27,7 +28,7 @@ type Deliverable = {
   quantity: number;
 };
 
-type PaymentIntent = {
+export type PaymentIntent = {
   id?: string;
   publicId?: string;
   slug?: string;
@@ -44,6 +45,11 @@ type PaymentIntent = {
     avatarUrl?: string | null;
     isVerified?: boolean;
   } | null;
+};
+
+type PaymentLinkPageProps = {
+  previewIntent?: PaymentIntent;
+  previewProviderHandle?: string;
 };
 
 const safeDecode = (value: string) => {
@@ -128,15 +134,22 @@ function PaystackLogoPill({ className = '' }: { className?: string }) {
   );
 }
 
-export default function PaymentLinkPage() {
+export default function PaymentLinkPage({
+  previewIntent,
+  previewProviderHandle = '',
+}: PaymentLinkPageProps = {}) {
   const params = useParams();
   const intentId = typeof params?.id === 'string' ? params.id : '';
   const providerHandle =
-    typeof params?.provider === 'string' ? params.provider : '';
+    previewProviderHandle ||
+    (typeof params?.provider === 'string' ? params.provider : '');
   const fallbackProviderName = formatProviderName(providerHandle);
+  const isPreview = Boolean(previewIntent);
 
-  const [intent, setIntent] = useState<PaymentIntent | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [intent, setIntent] = useState<PaymentIntent | null>(
+    previewIntent ?? null,
+  );
+  const [loading, setLoading] = useState(!previewIntent);
   const [error, setError] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [payingScheduleId, setPayingScheduleId] = useState<string | null>(null);
@@ -149,6 +162,7 @@ export default function PaymentLinkPage() {
   };
 
   useEffect(() => {
+    if (previewIntent) return;
     if (!intentId) return;
 
     let active = true;
@@ -185,7 +199,7 @@ export default function PaymentLinkPage() {
     return () => {
       active = false;
     };
-  }, [intentId]);
+  }, [intentId, previewIntent]);
 
   const schedules = useMemo(() => {
     if (!intent?.schedules) return [];
@@ -200,7 +214,7 @@ export default function PaymentLinkPage() {
   );
 
   const handlePaySchedule = async (schedule: PaymentSchedule) => {
-    if (schedule.status === 'paid') return;
+    if (isPreview || schedule.status === 'paid') return;
 
     setPayError(null);
     setPayingScheduleId(schedule.id);
@@ -296,6 +310,21 @@ export default function PaymentLinkPage() {
       style={pageFontStyle}
     >
       <div className="mx-auto max-w-[496px]">
+        {isPreview && (
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <Link
+              href="/welcome-to-dfn"
+              className="inline-flex items-center gap-2 text-[11px] font-medium text-[var(--app-muted)] transition hover:text-[var(--app-foreground-strong)]"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Back to dfn!.
+            </Link>
+            <span className="rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-[var(--app-muted)]">
+              Sample payment link
+            </span>
+          </div>
+        )}
+
         <header className="flex items-center justify-between border-b border-[var(--app-border)] pb-5">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--app-surface-strong)] text-[12.5px] font-semibold text-[var(--app-foreground-strong)]">
@@ -332,7 +361,7 @@ export default function PaymentLinkPage() {
           </h1>
 
           <section
-            className="mt-6 rounded-2xl border p-6 text-white"
+            className="mt-6 rounded-2xl border p-5 text-white sm:p-6"
             style={paymentCardStyle}
           >
             <div className="flex items-start justify-between gap-4">
@@ -343,7 +372,7 @@ export default function PaymentLinkPage() {
                 Due {formatDate(activeSchedule?.dueDate)}
               </p>
             </div>
-            <p className="font-display mt-3 text-[44px] font-medium leading-none tracking-normal text-white">
+            <p className="font-display mt-3 text-[40px] font-medium leading-none tracking-normal text-white sm:text-[44px]">
               {formatCurrency(intent.totalAmount, intent.currency)}
             </p>
 
@@ -402,16 +431,21 @@ export default function PaymentLinkPage() {
                 type="button"
                 onClick={() => handlePaySchedule(activeSchedule)}
                 disabled={
+                  isPreview ||
                   payingScheduleId === activeSchedule.id ||
                   activeSchedule.status === 'paid'
                 }
-                className="font-display mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#7e49f0] shadow-[0_14px_36px_rgba(39,10,90,0.18)] transition hover:bg-white/95 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`font-display mt-6 inline-flex h-12 w-full flex-nowrap items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#7e49f0] shadow-[0_14px_36px_rgba(39,10,90,0.18)] transition hover:bg-white/95 disabled:cursor-not-allowed sm:gap-2 sm:px-5 sm:text-[13px] sm:tracking-[0.08em] ${
+                  isPreview ? 'disabled:opacity-100' : 'disabled:opacity-50'
+                }`}
               >
                 {payingScheduleId === activeSchedule.id ? (
                   'Redirecting...'
                 ) : (
                   <>
-                    <span>Pay {formatCurrency(activeAmount, intent.currency)} with</span>
+                    <span className="whitespace-nowrap">
+                      Pay {formatCurrency(activeAmount, intent.currency)} with
+                    </span>
                     <PaystackLogoPill className="h-7" />
                   </>
                 )}
@@ -420,7 +454,9 @@ export default function PaymentLinkPage() {
             )}
 
             <p className="mt-4 text-center text-[11.5px] text-white/70">
-              Card, EFT, or mobile money — no account needed.
+              {isPreview
+                ? 'Sample preview — no payment will be processed.'
+                : 'Card, EFT, or mobile money — no account needed.'}
             </p>
             {payError && <p className="mt-4 rounded-lg bg-white/10 p-3 text-[12px] text-white">{payError}</p>}
           </section>
@@ -431,7 +467,7 @@ export default function PaymentLinkPage() {
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">Secured by Paystack</span>
               <PaystackLogoPill />
             </p>
-            <p className="mt-3">Powered by dfn!</p>
+            <p className="mt-3">Powered by dfn!.</p>
           </footer>
         </section>
       </div>

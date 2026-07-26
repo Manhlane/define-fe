@@ -14,14 +14,14 @@ export default function PrivacyPolicyV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">1. Introduction</h2>
             <p>
-              define! (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) respects your privacy and is committed
+              dfn!. (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) respects your privacy and is committed
               to protecting your personal information.
             </p>
             <p>
               This Privacy Policy explains how we collect, use, store, and
-              protect your information when you use the define! platform.
+              protect your information when you use the dfn!. platform.
             </p>
-            <p>By using define!, you agree to this Privacy Policy.</p>
+            <p>By using dfn!., you agree to this Privacy Policy.</p>
           </div>
 
           <div>
@@ -42,7 +42,7 @@ export default function PrivacyPolicyV1() {
 
             <div className="mt-4 space-y-2">
               <p className="font-medium">2.2 Payment Information</p>
-              <p>define! does not store full card details.</p>
+              <p>dfn!. does not store full card details.</p>
               <p>
                 Payments are processed securely through third-party payment
                 providers, including Paystack. Payment data is handled according
@@ -156,7 +156,7 @@ export default function PrivacyPolicyV1() {
 
           <div>
             <h2 className="text-xl font-semibold mb-2">9. Cookies</h2>
-            <p>define! uses essential cookies necessary for:</p>
+            <p>dfn!. uses essential cookies necessary for:</p>
             <ul className="list-disc pl-6">
               <li>Authentication</li>
               <li>Session management</li>
@@ -169,7 +169,7 @@ export default function PrivacyPolicyV1() {
           <div>
             <h2 className="text-xl font-semibold mb-2">10. International Data Transfers</h2>
             <p>
-              If define! expands internationally, your information may be
+              If dfn!. expands internationally, your information may be
               processed outside South Africa. We will take reasonable steps to
               ensure adequate protection of personal data.
             </p>
@@ -193,7 +193,7 @@ export default function PrivacyPolicyV1() {
             <h2 className="text-xl font-semibold mb-2">12. Contact Us</h2>
             <p>If you have questions about this Privacy Policy, please contact:</p>
             <p>
-              define!
+              dfn!.
               <br />
               Email: support@define.app
             </p>
@@ -202,7 +202,7 @@ export default function PrivacyPolicyV1() {
         </section>
 
         <div className="mt-12 text-sm text-gray-500">
-          © {new Date().getFullYear()} define!. (dfn!.) All rights reserved.
+          © {new Date().getFullYear()} dfn!. All rights reserved.
         </div>
       </div>
     </div>

@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import {
+  ArrowLeftIcon,
   ArrowTopRightOnSquareIcon,
   ArrowRightIcon,
-  BanknotesIcon,
   BellIcon,
   CalendarDaysIcon,
   ChatBubbleOvalLeftEllipsisIcon,
@@ -14,14 +14,17 @@ import {
   ClipboardDocumentIcon,
   ExclamationCircleIcon,
   LinkIcon,
-  LockClosedIcon,
   PlusIcon,
   QrCodeIcon,
-  ShieldCheckIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { FcGoogle } from 'react-icons/fc';
 import DefineLayout from '../../components/DefineLayout';
 import { NotificationsClient } from '../../lib/notifications';
+
+const AUTH_BASE_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL ?? 'https://joindfn.com/api/auth';
+const GOOGLE_AUTH_URL = `${AUTH_BASE_URL}/google`;
 
 type PaymentDraft = {
   amount: string;
@@ -333,6 +336,7 @@ function PaymentLinkQrCode({ value }: { value: string }) {
 
 export default function CreatePaymentLinkPage() {
   const [hasSession, setHasSession] = useState(false);
+  const [useGuestLayout, setUseGuestLayout] = useState(false);
   const [contactDraft, setContactDraft] = useState<ContactDraft>(getInitialContactDraft);
   const [contactErrors, setContactErrors] = useState<{
     name?: string;
@@ -473,6 +477,9 @@ export default function CreatePaymentLinkPage() {
     if (typeof window === 'undefined') {
       return;
     }
+    setUseGuestLayout(
+      new URLSearchParams(window.location.search).get('view') === 'guest',
+    );
     const stored = window.localStorage.getItem('define.auth');
     if (!stored) {
       setHasSession(false);
@@ -555,6 +562,21 @@ export default function CreatePaymentLinkPage() {
     return `@${normalized || 'service-provider'}`;
   };
 
+  function showAuthGate() {
+    if (authGateLoading || authGateOpen) {
+      return;
+    }
+
+    setAuthGateLoading(true);
+    if (authGateTimerRef.current) {
+      clearTimeout(authGateTimerRef.current);
+    }
+    authGateTimerRef.current = setTimeout(() => {
+      setAuthGateLoading(false);
+      setAuthGateOpen(true);
+    }, 2500);
+  }
+
   async function handlePaymentSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -566,21 +588,20 @@ export default function CreatePaymentLinkPage() {
     setSubmitError(null);
 
     if (!hasSession) {
-      if (authGateLoading || authGateOpen) {
-        return;
-      }
-      setAuthGateLoading(true);
-      if (authGateTimerRef.current) {
-        clearTimeout(authGateTimerRef.current);
-      }
-      authGateTimerRef.current = setTimeout(() => {
-        setAuthGateLoading(false);
-        setAuthGateOpen(true);
-      }, 2500);
+      showAuthGate();
       return;
     }
 
     await finalizePaymentLink();
+  }
+
+  function handleSaveDraft() {
+    if (!hasSession) {
+      showAuthGate();
+      return;
+    }
+
+    persistPaymentRequest({ status: 'draft' });
   }
 
   const normalizePhoneDigits = (value: string) => {
@@ -1246,7 +1267,7 @@ export default function CreatePaymentLinkPage() {
               {deliverablesList.map((item) => (
                 <span
                   key={item}
-                  className="inline-flex h-9 items-center gap-2 rounded-full bg-black px-3 text-[11.5px] font-medium text-white"
+                  className="dfn-inverse-control inline-flex h-9 items-center gap-2 rounded-full bg-black px-3 text-[11.5px] font-medium text-white"
                 >
                   <span aria-hidden="true">✓</span>
                   {item}
@@ -1444,7 +1465,7 @@ export default function CreatePaymentLinkPage() {
                 }}
                 className={`h-10 rounded-xl text-[13px] font-medium transition ${
                   depositMode === 'percent'
-                    ? 'bg-black text-white'
+                    ? 'dfn-inverse-control bg-black text-white'
                     : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
@@ -1460,7 +1481,7 @@ export default function CreatePaymentLinkPage() {
                 }}
                 className={`h-10 rounded-xl text-[13px] font-medium transition ${
                   depositMode === 'fixed'
-                    ? 'bg-black text-white'
+                    ? 'dfn-inverse-control bg-black text-white'
                     : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
@@ -1485,7 +1506,7 @@ export default function CreatePaymentLinkPage() {
                       }
                     }}
                     style={{
-                      background: `linear-gradient(to right, #050505 0%, #050505 ${depositPercentValue}%, #e5e5e5 ${depositPercentValue}%, #e5e5e5 100%)`,
+                      background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${depositPercentValue}%, var(--create-slider-track) ${depositPercentValue}%, var(--create-slider-track) 100%)`,
                     }}
                     className="deposit-slider h-1.5 flex-1 cursor-pointer appearance-none rounded-full accent-black"
                   />
@@ -1587,7 +1608,7 @@ export default function CreatePaymentLinkPage() {
               <div className="flex items-center justify-between text-[10.5px] uppercase tracking-[0.12em] text-neutral-500">
                 <div className="flex items-center gap-2">
                   <span>Deposit</span>
-                  <span className="rounded-full bg-black px-2 py-0.5 text-[9.5px] font-semibold tracking-[0.1em] text-white">
+                  <span className="dfn-inverse-control rounded-full bg-black px-2 py-0.5 text-[9.5px] font-semibold tracking-[0.1em] text-white">
                     Due now
                   </span>
                 </div>
@@ -1654,7 +1675,7 @@ export default function CreatePaymentLinkPage() {
   );
 
   const successPanel = (
-    <div className="w-full max-w-[560px] text-left">
+    <div className="dfn-success-panel w-full max-w-[560px] text-left">
       <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/65">
         Sent · {invoiceLabel}
       </p>
@@ -1690,7 +1711,7 @@ export default function CreatePaymentLinkPage() {
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(`Here is your dfn! payment link: ${previewLink}`)}`}
+          href={`https://wa.me/?text=${encodeURIComponent(`Here is your dfn!. payment link: ${previewLink}`)}`}
           target="_blank"
           rel="noreferrer"
           className="dfn-btn dfn-btn-primary inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-white transition"
@@ -1810,7 +1831,7 @@ export default function CreatePaymentLinkPage() {
         </span>
       </div>
 
-      <div className="mt-5 rounded-3xl border border-neutral-200 bg-white px-6 py-6">
+      <div className="mt-5 rounded-3xl border border-neutral-200 bg-white px-4 py-5 sm:px-6 sm:py-6">
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.24em] text-neutral-500">
           Step 05 · Commit
         </p>
@@ -1824,7 +1845,7 @@ export default function CreatePaymentLinkPage() {
         <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
           <button
             type="button"
-            onClick={() => persistPaymentRequest({ status: 'draft' })}
+            onClick={handleSaveDraft}
             className="group flex min-h-[76px] items-center justify-between rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-left transition hover:border-neutral-400"
           >
             <span>
@@ -1843,7 +1864,7 @@ export default function CreatePaymentLinkPage() {
           <button
             type="submit"
             disabled={isSubmitLoading}
-            className="group flex min-h-[76px] items-center justify-between rounded-2xl bg-[var(--app-accent)] px-5 py-4 text-left text-[var(--app-ink)] transition hover:bg-[var(--app-accent-strong)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="group flex min-h-[76px] items-center justify-between rounded-2xl bg-[var(--app-accent)] px-5 py-4 text-left text-[var(--app-ink)] transition hover:bg-[#e8885d] disabled:cursor-not-allowed disabled:opacity-70"
           >
             <span>
               <span className="block text-[10.5px] font-semibold uppercase tracking-[0.22em] text-[rgba(8,16,31,0.62)]">
@@ -1853,7 +1874,7 @@ export default function CreatePaymentLinkPage() {
                 {isSubmitLoading ? submitLabel : `Send link to ${clientFirstName}`}
               </span>
             </span>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[rgba(8,16,31,0.96)] text-[var(--app-foreground-strong)] transition group-hover:bg-[rgba(8,16,31,0.88)] group-hover:text-[var(--app-foreground-strong)]">
+            <span className="dfn-send-icon grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[rgba(8,16,31,0.96)] transition group-hover:bg-[rgba(8,16,31,0.88)]">
               <ArrowRightIcon className="h-4 w-4 -rotate-45" />
             </span>
           </button>
@@ -1875,22 +1896,46 @@ export default function CreatePaymentLinkPage() {
   const pageContent = (
     <div className="theme-midnight dfn-create-page dfn-page min-h-[100dvh] bg-white font-sans text-black">
       <form onSubmit={handlePaymentSubmit} noValidate>
-        <header className="dfn-topbar sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white/95 px-6 backdrop-blur">
-          <div className="text-[14px] font-semibold text-[var(--app-foreground-strong)]">New payment link</div>
-          <div className="flex items-center gap-2">
+        <header className="dfn-topbar sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-neutral-200 bg-white/95 px-3 backdrop-blur sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            {useGuestLayout && (
+              <Link
+                href="/welcome-to-dfn"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-600 transition hover:bg-neutral-50 hover:text-black"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Back
+              </Link>
+            )}
+            <div
+              className={`truncate text-[14px] font-semibold text-[var(--app-foreground-strong)] ${
+                useGuestLayout ? 'hidden min-[460px]:block' : ''
+              }`}
+            >
+              New payment link
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => persistPaymentRequest({ status: 'draft' })}
-              className="dfn-btn dfn-btn-secondary hidden h-9 items-center rounded-full border border-neutral-300 bg-white px-4 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-neutral-600 transition hover:bg-neutral-50 sm:inline-flex"
+              onClick={handleSaveDraft}
+              className="dfn-btn dfn-btn-secondary dfn-topbar-draft h-9 items-center rounded-full border border-neutral-300 bg-white px-4 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-neutral-600 transition hover:bg-neutral-50"
             >
               Save draft
             </button>
             <button
               type="submit"
               disabled={isSubmitLoading}
-              className="dfn-btn dfn-btn-primary inline-flex h-9 items-center gap-2 rounded-full px-4 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition disabled:cursor-not-allowed disabled:opacity-70"
+              className="dfn-btn dfn-btn-primary inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold uppercase tracking-[0.08em] text-white transition disabled:cursor-not-allowed disabled:opacity-70 sm:gap-2 sm:px-4 sm:text-[13px]"
             >
-              {isSubmitLoading ? submitLabel : 'Send link'}
+              {isSubmitLoading ? (
+                submitLabel
+              ) : (
+                <>
+                  <span>Send</span>
+                  <span className="hidden min-[380px]:inline">link</span>
+                </>
+              )}
               <ArrowRightIcon className="h-4 w-4" />
             </button>
             <button
@@ -1904,7 +1949,7 @@ export default function CreatePaymentLinkPage() {
         </header>
 
         <main className="grid min-h-[calc(100dvh-56px)] lg:grid-cols-[minmax(0,1fr)_410px]">
-          <section className="dfn-compose-pane px-5 py-9 lg:px-8 lg:py-8">
+          <section className="dfn-compose-pane min-w-0 px-4 py-8 sm:px-5 sm:py-9 lg:px-8 lg:py-8">
             <div className="mx-auto max-w-[620px]">
               {linkCreated ? (
                 successPanel
@@ -1913,7 +1958,7 @@ export default function CreatePaymentLinkPage() {
                   <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[var(--primary)]">
                     Draft · {invoiceLabel}
                   </p>
-                  <h1 className="font-display mt-4 max-w-[540px] text-[40px] font-medium leading-[1.06] tracking-[-0.02em] text-[var(--app-foreground-strong)]">
+                  <h1 className="font-display mt-4 max-w-[540px] text-[34px] font-medium leading-[1.06] tracking-[-0.02em] text-[var(--app-foreground-strong)] sm:text-[40px]">
                     Compose a <span className="italic text-[var(--primary)]">payment</span>{' '}
                     request.
                   </h1>
@@ -2006,7 +2051,7 @@ export default function CreatePaymentLinkPage() {
           </section>
 
           <aside className="dfn-preview-rail border-t border-[var(--app-border)] bg-[linear-gradient(180deg,#945cf8_0%,#844cf2_46%,#7a45ed_100%)] text-[var(--app-foreground-strong)] lg:sticky lg:top-14 lg:h-[calc(100dvh-56px)] lg:overflow-y-auto lg:border-l lg:border-t-0 lg:border-l-[var(--app-border)]">
-            <div className="px-6 py-8">
+            <div className="px-4 py-7 sm:px-6 sm:py-8">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-white/75">
                   Live preview
@@ -2116,80 +2161,72 @@ export default function CreatePaymentLinkPage() {
         onClose={() => setAuthGateOpen(false)}
         className="fixed inset-0 z-50"
       >
-        <DialogBackdrop className="fixed inset-0 z-40 bg-black/50" />
-        <DialogPanel className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-none bg-white p-6 shadow-xl max-h-[85vh] overflow-y-auto md:max-h-none md:overflow-visible md:max-w-lg">
-          <div className="flex items-center justify-end">
-            <button
-              type="button"
-              onClick={() => setAuthGateOpen(false)}
-              className="text-sm text-neutral-500"
-            >
-              Close
-            </button>
-          </div>
+        <DialogBackdrop className="fixed inset-0 z-40 bg-[rgba(2,4,9,0.78)] backdrop-blur-[3px]" />
+        <DialogPanel
+          aria-labelledby="auth-gate-title"
+          aria-describedby="auth-gate-description"
+          className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-32px)] w-[calc(100%-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[22px] border border-[var(--app-border)] bg-[var(--app-surface)] px-7 pb-7 pt-9 text-[var(--app-foreground)] shadow-[var(--app-shadow)]"
+        >
+          <button
+            type="button"
+            onClick={() => setAuthGateOpen(false)}
+            aria-label="Close sign-in prompt"
+            className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-[var(--app-border)] text-[var(--app-muted)] transition hover:border-[var(--app-muted-soft)] hover:text-[var(--app-foreground-strong)]"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
 
-          <div className="mt-2 flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-              <CheckIcon className="h-8 w-8" />
-            </div>
-            <h3 className="font-display mt-4 text-lg font-semibold tracking-normal text-neutral-900">
-              Your payment link is ready
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--app-accent-strong)]">
+              Almost there
+            </p>
+            <h3
+              id="auth-gate-title"
+              className="mt-2 text-[26px] font-medium leading-[1.16] tracking-[-0.025em] text-[var(--app-foreground-strong)]"
+            >
+              Sign in to <span className="italic">send</span> this link.
             </h3>
-            <p className="mt-2 text-sm text-neutral-600">
-              Create a free account to send it and track the payment.
+            <p
+              id="auth-gate-description"
+              className="mt-3 max-w-[350px] text-[13px] leading-[1.65] text-[var(--app-muted)]"
+            >
+              We&apos;ll deliver the link to {clientFirstName} the moment you&apos;re back — your draft is safe here until then.
             </p>
           </div>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-2.5">
             <Link
-              href="/welcome-to-dfn"
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 text-sm font-medium text-black transition hover:bg-neutral-50 active:scale-[0.99]"
+              href="/auth?mode=login"
+              className="flex h-[50px] w-full items-center justify-between rounded-[16px] bg-[#ad84f4] px-5 text-[13px] font-semibold text-[#11131a] transition hover:bg-[#bd9af7] active:scale-[0.99]"
             >
-              <FcGoogle />
-              Continue with Google
+              <span>Sign in</span>
+              <ArrowRightIcon className="h-4 w-4 -rotate-45" />
             </Link>
 
-            <div className="flex items-center gap-3 text-xs text-neutral-400">
-              <span className="h-px flex-1 bg-neutral-200" />
-              <span>or</span>
-              <span className="h-px flex-1 bg-neutral-200" />
-            </div>
-
             <Link
-              href="/welcome-to-dfn"
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-black text-sm font-medium text-white transition active:scale-[0.99]"
+              href="/auth?mode=register"
+              className="flex h-[50px] w-full items-center justify-between rounded-[16px] border border-[var(--app-border)] px-5 text-[13px] font-semibold text-[var(--app-foreground)] transition hover:bg-[var(--app-surface-elevated)] active:scale-[0.99]"
             >
-              Continue with email
+              <span>Create an account</span>
+              <ArrowRightIcon className="h-4 w-4 -rotate-45 text-[var(--app-muted)]" />
             </Link>
 
-            <p className="text-center text-sm text-neutral-500">
-              Already have an account?{' '}
-              <Link href="/auth?mode=login" className="font-medium text-neutral-900 underline">
-                Sign in
-              </Link>
-            </p>
+            <a
+              href={GOOGLE_AUTH_URL}
+              className="flex h-[50px] w-full items-center justify-center gap-2.5 rounded-[16px] border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-5 text-[13px] font-semibold text-[var(--app-foreground)] transition hover:border-[var(--app-muted-soft)] hover:bg-[var(--app-surface-strong)] active:scale-[0.99]"
+            >
+              <FcGoogle className="h-4 w-4" />
+              <span>Continue with Google</span>
+            </a>
           </div>
 
-          <div className="mt-6">
-            <div className="grid gap-2 text-xs text-neutral-500 sm:grid-cols-3 sm:text-center">
-              <div className="flex items-center gap-2 sm:justify-center">
-                <LockClosedIcon className="h-4 w-4" />
-                Escrow protected
-              </div>
-              <div className="flex items-center gap-2 sm:justify-center">
-                <ShieldCheckIcon className="h-4 w-4" />
-                Bank-level security
-              </div>
-              <div className="flex items-center gap-2 sm:justify-center">
-                <BanknotesIcon className="h-4 w-4" />
-                Free to use
-              </div>
-            </div>
-          </div>
+          <p className="mt-6 text-center text-[9.5px] font-semibold uppercase tracking-[0.3em] text-[var(--app-muted)]">
+            Your draft is kept on this device
+          </p>
         </DialogPanel>
       </Dialog>
     </>
   );
 
-  return hasSession ? <DefineLayout>{content}</DefineLayout> : content;
+  return hasSession && !useGuestLayout ? <DefineLayout>{content}</DefineLayout> : content;
 }
