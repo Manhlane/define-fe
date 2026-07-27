@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight,
+  ChevronDown,
   Check,
+  Mail,
   Moon,
   Plus,
   ShieldCheck,
   Sparkles,
+  Send,
   Sun,
 } from 'lucide-react';
 import { SAMPLE_PAYMENT_LINK } from '@/src/lib/sample-payment-link';
@@ -20,6 +23,8 @@ import {
 } from '@/src/lib/theme';
 
 const CREATE_PAYMENT_LINK = '/create-payment-link?view=guest';
+const CONTACT_EMAIL = 'hello@joindfn.com';
+const CONTACT_FORM_SUBJECT = 'dfn!.%20website%20message';
 
 const HOW_IT_WORKS_STEPS = [
   {
@@ -83,6 +88,8 @@ const FAQS = [
       'Clients see the payment methods Paystack makes available to them securely at checkout.',
   },
 ];
+
+const SECTION_TITLE_CLASS = 'welcome-section-title';
 
 function CreateLinkButton({
   className = '',
@@ -261,6 +268,9 @@ export default function LandingPage() {
               <Link href="#faq" className="welcome-nav-link">
                 FAQ
               </Link>
+              <Link href="#contact" className="welcome-nav-link">
+                Contact
+              </Link>
               <Link href="/auth?mode=register" className="welcome-nav-link">
                 Sign up
               </Link>
@@ -360,12 +370,9 @@ export default function LandingPage() {
         className="welcome-how-it-works scroll-mt-6 px-5 py-20 sm:px-10 lg:py-[98px]"
       >
         <div className="mx-auto w-full max-w-[1168px]">
-          <h2
-            id="how-dfn-works-title"
-            className="text-[34px] font-medium leading-tight tracking-[-0.025em] text-[var(--welcome-heading)]"
-          >
-            How dfn!. works
-          </h2>
+	          <h2 id="how-dfn-works-title" className={SECTION_TITLE_CLASS}>
+	            How dfn!. works
+	          </h2>
           <p className="mt-3 text-[14px] leading-6 text-[var(--app-muted)]">
             Book the gig, shoot the gig, get paid — no awkward follow-ups.
           </p>
@@ -398,26 +405,13 @@ export default function LandingPage() {
       >
         <div className="mx-auto grid w-full max-w-[1168px] gap-14 lg:grid-cols-[minmax(0,1fr)_530px] lg:items-start lg:gap-24">
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#7378ff]">
-              Simple pricing
-            </p>
-            <h2
-              id="pricing-title"
-              className="mt-5 max-w-[470px] text-[40px] font-medium leading-[1.12] tracking-[-0.03em] text-[var(--welcome-heading)] sm:text-[46px]"
-            >
-              Pay only when your client pays.
-            </h2>
+	            <h2 id="pricing-title" className={`mt-5 max-w-[470px] ${SECTION_TITLE_CLASS}`}>
+	              Pay only when your client pays.
+	            </h2>
             <p className="mt-5 max-w-[500px] text-[14px] leading-7 text-[var(--app-muted)]">
               A 5% fee is added to each successful payment. Everything is
               included — no subscription, setup cost or separate invoice.
             </p>
-            <a
-              href="#pricing-details"
-              className="mt-8 inline-flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.24em] text-[#7479ff] transition hover:text-[var(--welcome-heading)]"
-            >
-              See full pricing
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </a>
           </div>
 
           <div
@@ -461,12 +455,9 @@ export default function LandingPage() {
       >
         <div className="mx-auto grid w-full max-w-[1168px] gap-14 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-24">
           <div>
-            <h2
-              id="faq-title"
-              className="text-[34px] font-medium tracking-[-0.025em] text-[var(--welcome-heading)]"
-            >
-              Questions, answered.
-            </h2>
+	            <h2 id="faq-title" className={SECTION_TITLE_CLASS}>
+	              Questions, answered.
+	            </h2>
             <p className="mt-4 text-[14px] text-[var(--app-muted)]">
               Everything you’d ask before sending your first link.
             </p>
@@ -493,10 +484,124 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section
+        id="contact"
+        aria-label="Contact"
+        className="scroll-mt-6 border-t border-[var(--app-border)] px-5 py-20 sm:px-10 lg:py-[116px]"
+      >
+        <div className="mx-auto grid w-full max-w-[1168px] gap-14 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-24">
+          <div>
+	            <h2 className={`${SECTION_TITLE_CLASS} mt-5`}>
+	              Questions, feedback, or just saying hi?
+	            </h2>
+            <p className="mt-4 text-[14px] leading-7 text-[var(--app-muted)]">
+              We read every message. Whether you need help with a deposit link,
+              want to report a bug, or have a feature idea - drop it here.
+            </p>
+
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="mt-8 inline-flex items-center gap-4 text-[var(--app-foreground)] transition hover:text-[#6268f5]"
+            >
+              <span className="welcome-contact-email-icon grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--app-border)] text-[#6268f5]">
+                <Mail className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span>
+                <span className="block text-[9px] font-semibold uppercase tracking-[0.24em] text-[var(--app-muted)]">
+                  Email us
+                </span>
+                <span className="mt-1 block text-[13px]">{CONTACT_EMAIL}</span>
+              </span>
+            </a>
+          </div>
+
+          <form
+            action={`mailto:${CONTACT_EMAIL}?subject=${CONTACT_FORM_SUBJECT}`}
+            method="post"
+            encType="text/plain"
+            className="welcome-contact-card rounded-[18px] border border-[var(--app-border)] p-5 sm:p-8"
+          >
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="block">
+                <span className="welcome-contact-label">Name</span>
+                <input
+                  type="text"
+                  name="name"
+                  required
+                  autoComplete="name"
+                  placeholder="Your name"
+                  className="welcome-contact-control mt-2 h-12 w-full border border-[var(--app-border)] px-4 text-[13px] text-[var(--app-foreground)] outline-none transition placeholder:text-[var(--app-muted-soft)] focus:border-[#6268f5]"
+                />
+              </label>
+
+              <label className="block">
+                <span className="welcome-contact-label">Email</span>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className="welcome-contact-control mt-2 h-12 w-full border border-[var(--app-border)] px-4 text-[13px] text-[var(--app-foreground)] outline-none transition placeholder:text-[var(--app-muted-soft)] focus:border-[#6268f5]"
+                />
+              </label>
+            </div>
+
+            <label className="mt-6 block">
+              <span className="welcome-contact-label">Subject</span>
+              <span className="relative mt-2 block">
+                <select
+                  name="topic"
+                  required
+                  defaultValue=""
+                  className="welcome-contact-control h-12 w-full appearance-none border border-[var(--app-border)] px-4 pr-11 text-[13px] text-[var(--app-foreground)] outline-none transition focus:border-[#6268f5]"
+                >
+                  <option value="" disabled>
+                    Pick a topic
+                  </option>
+                  <option value="Deposit or payment link">
+                    Deposit or payment link
+                  </option>
+                  <option value="Account or access">Account or access</option>
+                  <option value="Report a bug">Report a bug</option>
+                  <option value="Feature idea or feedback">
+                    Feature idea or feedback
+                  </option>
+                  <option value="Something else">Something else</option>
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--app-muted)]"
+                  aria-hidden="true"
+                />
+              </span>
+            </label>
+
+            <label className="mt-6 block">
+              <span className="welcome-contact-label">Message</span>
+              <textarea
+                name="message"
+                required
+                rows={5}
+                placeholder="Tell us what’s on your mind..."
+                className="welcome-contact-control mt-2 min-h-[132px] w-full resize-y border border-[var(--app-border)] px-4 py-3 text-[13px] leading-6 text-[var(--app-foreground)] outline-none transition placeholder:text-[var(--app-muted-soft)] focus:border-[#6268f5]"
+              />
+            </label>
+
+            <button
+              type="submit"
+              className="welcome-contact-submit mt-7 inline-flex h-[50px] w-full items-center justify-center gap-3 bg-[#6268f5] px-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#7378ff] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#6268f5] sm:w-auto"
+            >
+              Send message
+              <Send className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </form>
+        </div>
+      </section>
+
       <section className="welcome-closing border-y border-[var(--app-border)] px-5 py-20 text-center sm:px-10 lg:py-24">
-        <h2 className="text-[36px] font-medium leading-tight tracking-[-0.025em] text-[var(--welcome-heading)] sm:text-[42px]">
-          Your next booking should pay you first.
-        </h2>
+	        <h2 className={SECTION_TITLE_CLASS}>
+	          Your next booking should pay you first.
+	        </h2>
         <p className="mt-5 text-[14px] text-[var(--app-muted)]">
           Send your first deposit link in under a minute. Free to try. No card
           required.
@@ -549,9 +654,9 @@ export default function LandingPage() {
             <div>
               <p className="welcome-footer-heading">Company</p>
               <div className="mt-5 flex flex-col gap-4">
-                <a href="mailto:hello@joindfn.com" className="welcome-footer-link">
+                <Link href="#contact" className="welcome-footer-link">
                   Contact
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -632,6 +737,14 @@ export default function LandingPage() {
           transition: background 280ms ease;
         }
 
+        .welcome-section-title {
+          color: var(--welcome-heading);
+          font-size: 34px;
+          font-weight: 500;
+          line-height: 1.25;
+          letter-spacing: -0.025em;
+        }
+
         .welcome-nav-link,
         .welcome-footer-heading {
           color: var(--app-muted);
@@ -693,6 +806,41 @@ export default function LandingPage() {
           box-shadow: 0 22px 54px rgba(18, 24, 70, 0.05);
         }
 
+        .welcome-contact-card {
+          background: var(--welcome-pricing-bg);
+          box-shadow: 0 22px 54px rgba(18, 24, 70, 0.05);
+        }
+
+        .welcome-contact-label {
+          color: var(--app-muted);
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+        }
+
+        .welcome-contact-control {
+          border-radius: 16px !important;
+          background: color-mix(in srgb, var(--app-bg) 86%, var(--app-surface));
+        }
+
+        .welcome-contact-control:hover {
+          border-color: color-mix(in srgb, var(--app-border) 58%, var(--app-muted));
+        }
+
+        .welcome-contact-control option {
+          background: var(--app-surface);
+          color: var(--app-foreground);
+        }
+
+        .welcome-contact-submit {
+          border-radius: 14px !important;
+        }
+
+        .welcome-contact-email-icon {
+          background: var(--welcome-ghost-hover);
+        }
+
         .welcome-footer-link {
           color: var(--app-muted);
           font-size: 12px;
@@ -717,6 +865,12 @@ export default function LandingPage() {
           }
 
           .welcome-preview-card {
+            transition: none;
+          }
+
+          .welcome-contact-card,
+          .welcome-contact-control,
+          .welcome-contact-submit {
             transition: none;
           }
         }

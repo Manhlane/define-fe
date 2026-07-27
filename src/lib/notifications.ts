@@ -71,5 +71,3 @@ export const NotificationsClient = {
     paymentReference: string;
   }) => post('/payments/provider-booking-request', payload),
 };
-
-export type NotificationsClientType = typeof NotificationsClient;

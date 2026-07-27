@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LandingPage from './page.client';
 
@@ -28,6 +28,29 @@ describe('LandingPage', () => {
     expect(signInLink).toHaveAttribute('href', '/auth?mode=login');
   });
 
+  it('links the top navigation contact item to the in-page contact section', () => {
+    render(<LandingPage />);
+
+    const mainNav = screen.getByRole('navigation', { name: /main navigation/i });
+
+    expect(within(mainNav).getByRole('link', { name: /^contact$/i })).toHaveAttribute(
+      'href',
+      '#contact',
+    );
+  });
+
+  it('keeps the footer contact item linked to the in-page contact section', () => {
+    render(<LandingPage />);
+
+    const companyHeading = screen.getByText('Company');
+    const companySection = companyHeading.closest('div');
+
+    expect(companySection).not.toBeNull();
+    expect(
+      within(companySection as HTMLElement).getByRole('link', { name: /^contact$/i }),
+    ).toHaveAttribute('href', '#contact');
+  });
+
   it('uses the original welcome-page hero copy', () => {
     render(<LandingPage />);
 
@@ -40,6 +63,20 @@ describe('LandingPage', () => {
       screen.getByText(/clients pay deposits upfront through a secure payment link/i),
     ).toBeInTheDocument();
     expect(screen.queryByText('thandi-mokoena')).not.toBeInTheDocument();
+  });
+
+  it('keeps the major landing page headings on the same typography scale', () => {
+    render(<LandingPage />);
+
+    [
+      screen.getByRole('heading', { name: /how dfn!\. works/i }),
+      screen.getByRole('heading', { name: /pay only when your client pays\./i }),
+      screen.getByRole('heading', { name: /questions, answered\./i }),
+      screen.getByRole('heading', { name: /questions, feedback, or just saying hi\?/i }),
+      screen.getByRole('heading', { name: /your next booking should pay you first\./i }),
+    ].forEach((heading) => {
+      expect(heading).toHaveClass('welcome-section-title');
+    });
   });
 
   it('links the how-it-works call to action to the steps section', () => {
@@ -123,7 +160,7 @@ describe('LandingPage', () => {
     expect(screen.queryByText(/held by dfn/i)).not.toBeInTheDocument();
   });
 
-  it('includes pricing, FAQs, and the closing call to action', () => {
+  it('includes pricing, FAQs, the contact section, and the closing call to action', () => {
     render(<LandingPage />);
 
     expect(
@@ -132,10 +169,26 @@ describe('LandingPage', () => {
       }),
     ).toBeInTheDocument();
     expect(
+      screen.queryByText(/simple pricing/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/see full pricing/i),
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByRole('heading', { name: /questions, answered/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Is dfn!. holding my client’s money?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/questions, feedback, or just saying hi/i),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).toBeRequired();
+    expect(screen.getByLabelText('Email')).toBeRequired();
+    expect(screen.getByLabelText('Subject')).toBeRequired();
+    expect(screen.getByLabelText('Message')).toBeRequired();
+    expect(
+      screen.getByRole('button', { name: /send message/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {

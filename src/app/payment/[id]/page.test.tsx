@@ -40,6 +40,11 @@ describe('PaymentLinkPage preview mode', () => {
     expect(
       screen.getByText('Sample payment link'),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/terms & policies/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/absorbed by studio/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/full deposit refund/i)).toHaveLength(2);
     expect(fetchMock).not.toHaveBeenCalled();
 
     const paymentButton = screen.getByRole('button', {

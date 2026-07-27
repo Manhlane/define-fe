@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import {
   ArrowLeftIcon,
@@ -12,6 +12,7 @@ import {
   ChatBubbleOvalLeftEllipsisIcon,
   CheckIcon,
   ClipboardDocumentIcon,
+  ChevronDownIcon,
   ExclamationCircleIcon,
   LinkIcon,
   PlusIcon,
@@ -21,6 +22,13 @@ import {
 import { FcGoogle } from 'react-icons/fc';
 import DefineLayout from '../../components/DefineLayout';
 import { NotificationsClient } from '../../lib/notifications';
+import {
+  CANCELLATION_POLICY_OPTIONS,
+  DEFAULT_DEPOSIT_REFUND_WINDOW_DAYS,
+  MAX_DEPOSIT_REFUND_WINDOW_DAYS,
+  MIN_DEPOSIT_REFUND_WINDOW_DAYS,
+  PROCESSING_FEE_RATE,
+} from '../../lib/payment-policies';
 
 const AUTH_BASE_URL =
   process.env.NEXT_PUBLIC_AUTH_URL ?? 'https://joindfn.com/api/auth';
@@ -39,6 +47,9 @@ type ContactDraft = {
   name: string;
   phone: string;
 };
+
+type ProcessingFeeMode = 'absorb' | 'split' | 'pass' | 'custom';
+type RefundPolicyMode = 'flexible' | 'moderate' | 'strict' | 'custom';
 
 type StoredAuth = {
   accessToken?: string;
@@ -343,6 +354,15 @@ export default function CreatePaymentLinkPage() {
     phone?: string;
   }>({});
   const [paymentDraft, setPaymentDraft] = useState<PaymentDraft>(getInitialPaymentDraft);
+  const [processingFeeMode, setProcessingFeeMode] = useState<ProcessingFeeMode>('absorb');
+  const [isProcessingFeeAdvancedOpen, setIsProcessingFeeAdvancedOpen] = useState(false);
+  const [customProcessingFeeSharePercent, setCustomProcessingFeeSharePercent] = useState(0);
+  const [refundPolicyMode, setRefundPolicyMode] = useState<RefundPolicyMode>('flexible');
+  const [isRefundPolicyAdvancedOpen, setIsRefundPolicyAdvancedOpen] = useState(false);
+  const [customRefundPercent, setCustomRefundPercent] = useState(100);
+  const [customRefundCutoffDays, setCustomRefundCutoffDays] = useState(
+    DEFAULT_DEPOSIT_REFUND_WINDOW_DAYS,
+  );
   const [paymentErrors, setPaymentErrors] = useState<{
     amount?: string;
     email?: string;
@@ -370,6 +390,7 @@ export default function CreatePaymentLinkPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const authGateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialThemeRef = useRef<string | null>(null);
   const shootDateRef = useRef<HTMLInputElement | null>(null);
   const deliveryDateRef = useRef<HTMLInputElement | null>(null);
   const paymentDueRef = useRef<HTMLInputElement | null>(null);
@@ -395,13 +416,6 @@ export default function CreatePaymentLinkPage() {
     ? Math.min(Math.max(rawDepositAmount, 0), serviceAmount)
     : 0;
   const remainderAmount = Math.max(serviceAmount - depositAmount, 0);
-  const platformFee = serviceAmount * 0.05;
-  const depositFee = depositAmount * 0.05;
-  const remainderFee = remainderAmount * 0.05;
-  const clientPays = serviceAmount + platformFee;
-  const youReceive = serviceAmount;
-  const clientPaysNow = depositAmount + depositFee;
-  const clientPaysLater = remainderAmount + remainderFee;
   const formatZar = (value: number) => {
     const safe = Number.isFinite(value) ? value : 0;
     const whole = Math.round(safe).toString();
@@ -472,6 +486,105 @@ export default function CreatePaymentLinkPage() {
     }
     input.focus();
   };
+  const roundMoney = (value: number) => Math.round(value * 100) / 100;
+  const openProcessingFeeAdvancedSettings = () => {
+    if (processingFeeMode !== 'custom') {
+      setProcessingFeeMode('custom');
+    }
+    setIsProcessingFeeAdvancedOpen(true);
+  };
+  const toggleProcessingFeeAdvancedSettings = () => {
+    if (isProcessingFeeAdvancedOpen) {
+      setIsProcessingFeeAdvancedOpen(false);
+      return;
+    }
+    openProcessingFeeAdvancedSettings();
+  };
+  const selectProcessingFeePreset = (mode: Exclude<ProcessingFeeMode, 'custom'>) => {
+    setProcessingFeeMode(mode);
+    setIsProcessingFeeAdvancedOpen(false);
+  };
+  const openRefundPolicyAdvancedSettings = () => {
+    if (refundPolicyMode !== 'custom') {
+      setRefundPolicyMode('custom');
+    }
+    setIsRefundPolicyAdvancedOpen(true);
+  };
+  const toggleRefundPolicyAdvancedSettings = () => {
+    if (isRefundPolicyAdvancedOpen) {
+      setIsRefundPolicyAdvancedOpen(false);
+      return;
+    }
+    openRefundPolicyAdvancedSettings();
+  };
+  const selectRefundPolicyPreset = (mode: Exclude<RefundPolicyMode, 'custom'>) => {
+    setRefundPolicyMode(mode);
+    setIsRefundPolicyAdvancedOpen(false);
+  };
+  const selectedProcessingFeeSharePercent =
+    processingFeeMode === 'absorb'
+      ? 0
+      : processingFeeMode === 'split'
+        ? 50
+        : processingFeeMode === 'pass'
+          ? 100
+          : Math.min(Math.max(Math.round(customProcessingFeeSharePercent), 0), 100);
+  const selectedProcessingFeeStudioSharePercent =
+    100 - selectedProcessingFeeSharePercent;
+  const processingFeeSummaryText =
+    selectedProcessingFeeSharePercent === 0
+      ? 'You absorb the full 5% — deducted from your payout.'
+      : selectedProcessingFeeSharePercent === 50
+        ? 'You split the 5% fee 50 / 50.'
+        : selectedProcessingFeeSharePercent === 100
+          ? 'Client pays the full 5% — added on top.'
+          : `You split the 5% fee ${selectedProcessingFeeSharePercent} / ${selectedProcessingFeeStudioSharePercent}.`;
+  const selectedRefundPercent =
+    refundPolicyMode === 'flexible'
+      ? 100
+      : refundPolicyMode === 'moderate'
+        ? 50
+        : refundPolicyMode === 'strict'
+          ? 0
+          : Math.min(Math.max(Math.round(customRefundPercent), 0), 100);
+  const selectedRefundCutoffDays =
+    refundPolicyMode === 'custom'
+      ? Math.min(
+          Math.max(Math.round(customRefundCutoffDays), MIN_DEPOSIT_REFUND_WINDOW_DAYS),
+          MAX_DEPOSIT_REFUND_WINDOW_DAYS,
+        )
+      : DEFAULT_DEPOSIT_REFUND_WINDOW_DAYS;
+  const refundSubject = requireDeposit ? 'deposit' : 'payment';
+  const refundPolicySummaryText =
+    selectedRefundPercent === 0
+      ? 'No refund'
+      : selectedRefundPercent === 50
+        ? `50% ${refundSubject} refund`
+        : selectedRefundPercent === 100
+          ? `Full ${refundSubject} refund`
+          : `${selectedRefundPercent}% ${refundSubject} refund`;
+  const refundPolicyDescriptionText = `${refundPolicySummaryText} if the client cancels at least ${selectedRefundCutoffDays} days before the shoot. After that, no refund.`;
+  const feeShareRatio = selectedProcessingFeeSharePercent / 100;
+  const studioShareRatio = 1 - feeShareRatio;
+  const applyProcessingFee = (value: number) =>
+    roundMoney(value + roundMoney(value * PROCESSING_FEE_RATE * feeShareRatio));
+  const netAmountAfterProcessingFee = (value: number) =>
+    roundMoney(value - roundMoney(value * PROCESSING_FEE_RATE * studioShareRatio));
+  const depositChargeAmount = requireDeposit ? applyProcessingFee(depositAmount) : 0;
+  const remainderChargeAmount = requireDeposit ? applyProcessingFee(remainderAmount) : 0;
+  const totalChargeAmount = requireDeposit ? depositChargeAmount + remainderChargeAmount : applyProcessingFee(serviceAmount);
+  const totalNetAmount = requireDeposit
+    ? netAmountAfterProcessingFee(depositAmount) + netAmountAfterProcessingFee(remainderAmount)
+    : netAmountAfterProcessingFee(serviceAmount);
+  const serviceProcessingFeeAmount = roundMoney(serviceAmount * PROCESSING_FEE_RATE);
+  const processingFeeClientFeeAmount = roundMoney(
+    serviceProcessingFeeAmount * feeShareRatio,
+  );
+  const processingFeeStudioFeeAmount = roundMoney(
+    serviceProcessingFeeAmount * studioShareRatio,
+  );
+  const depositProcessingFeeAmount = roundMoney(depositAmount * PROCESSING_FEE_RATE);
+  const remainderProcessingFeeAmount = roundMoney(remainderAmount * PROCESSING_FEE_RATE);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -514,6 +627,25 @@ export default function CreatePaymentLinkPage() {
       }
     };
   }, []);
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    if (initialThemeRef.current === null) {
+      initialThemeRef.current = document.documentElement.dataset.theme ?? 'midnight';
+    }
+
+    document.documentElement.dataset.theme = linkCreated
+      ? 'daytime'
+      : initialThemeRef.current;
+
+    return () => {
+      if (initialThemeRef.current) {
+        document.documentElement.dataset.theme = initialThemeRef.current;
+      }
+    };
+  }, [linkCreated]);
 
   const getStoredAuth = () => {
     if (typeof window === 'undefined') return null;
@@ -746,6 +878,16 @@ export default function CreatePaymentLinkPage() {
       clientName: overrides?.clientName ?? contactDraft.name.trim(),
       clientEmail: overrides?.clientEmail ?? paymentDraft.email.trim(),
       serviceDescription: overrides?.serviceDescription ?? paymentDraft.serviceDescription.trim(),
+      passProcessingFeesToClient:
+        selectedProcessingFeeSharePercent >= 100,
+      allowDepositRefunds: selectedRefundPercent > 0,
+      depositRefundWindowDays: selectedRefundCutoffDays,
+      cancellationPolicy:
+        selectedRefundPercent >= 75
+          ? 'flexible'
+          : selectedRefundPercent >= 25
+            ? 'moderate'
+            : 'strict',
       createdAt,
       status: overrides?.status ?? 'pending',
     };
@@ -794,6 +936,16 @@ export default function CreatePaymentLinkPage() {
       currency: 'ZAR',
       totalAmount: serviceAmount,
       requireDeposit,
+      passProcessingFeesToClient:
+        selectedProcessingFeeSharePercent >= 100,
+      allowDepositRefunds: selectedRefundPercent > 0,
+      depositRefundWindowDays: selectedRefundCutoffDays,
+      cancellationPolicy:
+        selectedRefundPercent >= 75
+          ? 'flexible'
+          : selectedRefundPercent >= 25
+            ? 'moderate'
+            : 'strict',
     };
 
     if (requireDeposit) {
@@ -919,6 +1071,13 @@ export default function CreatePaymentLinkPage() {
     setPaymentErrors({});
     setDeliverablesList(getInitialDeliverables());
     setDeliverableInput('');
+    setProcessingFeeMode('absorb');
+    setIsProcessingFeeAdvancedOpen(false);
+    setCustomProcessingFeeSharePercent(0);
+    setRefundPolicyMode('flexible');
+    setIsRefundPolicyAdvancedOpen(false);
+    setCustomRefundPercent(100);
+    setCustomRefundCutoffDays(DEFAULT_DEPOSIT_REFUND_WINDOW_DAYS);
     setRequireDeposit(shouldUseDummyPaymentLinkData);
     setDepositMode('percent');
     setDepositPercent(50);
@@ -1236,6 +1395,305 @@ export default function CreatePaymentLinkPage() {
     </section>
   );
 
+  const policiesSection = (
+    <section id="policies" className="space-y-4 scroll-mt-24">
+      <div className="space-y-3">
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+          <div className="px-4 py-4">
+            <p className="text-[14px] font-semibold text-neutral-900">
+              Processing fee (5%)
+            </p>
+            <p className="mt-1 text-[12.5px] text-neutral-500">
+              Decide who covers Paystack + platform costs - pick a preset or fine-tune it.
+            </p>
+          </div>
+          <div className="space-y-3 px-4 pb-4">
+            <div className="grid gap-2 sm:grid-cols-3">
+              {[
+                {
+                  value: 'absorb' as const,
+                  label: 'Absorb',
+                  description: 'You pay 5%',
+                },
+                {
+                  value: 'split' as const,
+                  label: 'Split',
+                  description: '50 / 50',
+                },
+                {
+                  value: 'pass' as const,
+                  label: 'Pass on',
+                  description: 'Client pays 5%',
+                },
+              ].map((option) => {
+                const selected = processingFeeMode === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => selectProcessingFeePreset(option.value)}
+                    aria-pressed={selected}
+                    className={`rounded-2xl border px-3 py-3 text-left transition ${
+                      selected
+                        ? 'border-[var(--primary)] bg-neutral-50 shadow-[0_0_0_1px_var(--primary)]'
+                        : 'border-neutral-200 bg-white hover:border-neutral-300'
+                    }`}
+                  >
+                    <span className="block text-[13px] font-semibold text-neutral-900">
+                      {option.label}
+                    </span>
+                    <span className="mt-1 block text-[12px] text-neutral-500">
+                      {option.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[12.5px] leading-6 text-neutral-600">
+              <span className="font-semibold text-neutral-900">
+                {processingFeeSummaryText}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleProcessingFeeAdvancedSettings}
+              aria-expanded={isProcessingFeeAdvancedOpen}
+              aria-controls="processing-fee-advanced-settings"
+              className={`flex w-full items-center justify-between rounded-2xl border border-dashed px-4 py-3 text-left transition ${
+                processingFeeMode === 'custom' || isProcessingFeeAdvancedOpen
+                  ? 'border-[var(--primary)] bg-neutral-50 shadow-[0_0_0_1px_var(--primary)]'
+                  : 'border-neutral-300 bg-white hover:border-neutral-400'
+              }`}
+            >
+              <span className="text-[13px] font-semibold text-neutral-900">
+                Advanced settings
+              </span>
+              <ChevronDownIcon
+                className={`h-4 w-4 text-neutral-500 transition ${
+                  isProcessingFeeAdvancedOpen ? 'rotate-180 text-neutral-900' : ''
+                }`}
+              />
+            </button>
+
+            {processingFeeMode === 'custom' && isProcessingFeeAdvancedOpen && (
+              <div
+                id="processing-fee-advanced-settings"
+                className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-4"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <label className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                    Share passed to client
+                  </label>
+                  <div className="text-[12px] font-semibold text-neutral-900">
+                    {selectedProcessingFeeSharePercent}%
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={customProcessingFeeSharePercent}
+                  onChange={(event) => {
+                    const next = Number(event.target.value);
+                    const safeNext = Number.isNaN(next)
+                      ? 0
+                      : Math.min(Math.max(Math.round(next), 0), 100);
+                    setCustomProcessingFeeSharePercent(safeNext);
+                  }}
+                  style={{
+                    background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${selectedProcessingFeeSharePercent}%, var(--create-slider-track) ${selectedProcessingFeeSharePercent}%, var(--create-slider-track) 100%)`,
+                  }}
+                  className="deposit-slider h-1.5 w-full cursor-pointer appearance-none rounded-full accent-[var(--primary)]"
+                />
+                <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                  <span>You absorb</span>
+                  <span>50 / 50</span>
+                  <span>Client pays all</span>
+                </div>
+                <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-[12.5px] leading-6 text-neutral-600">
+                  On this invoice: client pays{' '}
+                  <span className="font-semibold text-neutral-900">
+                    {formatZar(processingFeeClientFeeAmount)}
+                  </span>{' '}
+                  fee · you absorb{' '}
+                  <span className="font-semibold text-neutral-900">
+                    {formatZar(processingFeeStudioFeeAmount)}
+                  </span>
+                  .
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+          <div className="px-4 py-4">
+            <p className="text-[14px] font-semibold text-neutral-900">
+              Cancellation policy
+            </p>
+            <p className="mt-1 text-[12.5px] text-neutral-500">
+              Pick a preset - or customize the exact refund terms.
+            </p>
+          </div>
+          <div className="space-y-3 px-4 pb-4">
+            <div className="grid gap-2 sm:grid-cols-3">
+              {CANCELLATION_POLICY_OPTIONS.map((option) => {
+                const selected = refundPolicyMode === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => selectRefundPolicyPreset(option.value)}
+                    aria-pressed={selected}
+                    className={`rounded-2xl border px-3 py-3 text-left transition ${
+                      selected
+                        ? 'border-[var(--primary)] bg-neutral-50 shadow-[0_0_0_1px_var(--primary)]'
+                        : 'border-neutral-200 bg-white hover:border-neutral-300'
+                    }`}
+                  >
+                    <span className="block text-[13px] font-semibold text-neutral-900">
+                      {option.label}
+                    </span>
+                    <span className="mt-1 block text-[12px] text-neutral-500">
+                      {option.description}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[12.5px] leading-6 text-neutral-600">
+              <span className="font-semibold text-neutral-900">
+                {refundPolicyDescriptionText}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleRefundPolicyAdvancedSettings}
+              aria-expanded={isRefundPolicyAdvancedOpen}
+              aria-controls="refund-policy-advanced-settings"
+              className={`flex w-full items-center justify-between rounded-2xl border border-dashed px-4 py-3 text-left transition ${
+                refundPolicyMode === 'custom' || isRefundPolicyAdvancedOpen
+                  ? 'border-[var(--primary)] bg-neutral-50 shadow-[0_0_0_1px_var(--primary)]'
+                  : 'border-neutral-300 bg-white hover:border-neutral-400'
+              }`}
+            >
+              <span className="text-[13px] font-semibold text-neutral-900">
+                Advanced settings
+              </span>
+              <ChevronDownIcon
+                className={`h-4 w-4 text-neutral-500 transition ${
+                  isRefundPolicyAdvancedOpen ? 'rotate-180 text-neutral-900' : ''
+                }`}
+              />
+            </button>
+
+            {refundPolicyMode === 'custom' && isRefundPolicyAdvancedOpen && (
+              <div
+                id="refund-policy-advanced-settings"
+                className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-4"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                      Refund amount
+                    </label>
+                    <div className="text-[12px] font-semibold text-neutral-900">
+                      {selectedRefundPercent}%
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={customRefundPercent}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      const safeNext = Number.isNaN(next)
+                        ? 0
+                        : Math.min(Math.max(Math.round(next), 0), 100);
+                      setCustomRefundPercent(safeNext);
+                    }}
+                    style={{
+                      background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${selectedRefundPercent}%, var(--create-slider-track) ${selectedRefundPercent}%, var(--create-slider-track) 100%)`,
+                    }}
+                    className="deposit-slider h-1.5 w-full cursor-pointer appearance-none rounded-full accent-[var(--primary)]"
+                  />
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                      Cutoff before shoot
+                    </label>
+                    <div className="flex h-9 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-[14px] text-neutral-900">
+                      <input
+                        type="number"
+                        min={MIN_DEPOSIT_REFUND_WINDOW_DAYS}
+                        max={MAX_DEPOSIT_REFUND_WINDOW_DAYS}
+                        value={selectedRefundCutoffDays}
+                        onChange={(event) => {
+                          const next = Number(event.target.value);
+                          const safeNext = Number.isNaN(next)
+                            ? DEFAULT_DEPOSIT_REFUND_WINDOW_DAYS
+                            : Math.min(
+                                Math.max(
+                                  Math.round(next),
+                                  MIN_DEPOSIT_REFUND_WINDOW_DAYS,
+                                ),
+                                MAX_DEPOSIT_REFUND_WINDOW_DAYS,
+                              );
+                          setCustomRefundCutoffDays(safeNext);
+                        }}
+                        className="w-8 bg-transparent text-center focus:outline-none"
+                      />
+                      <span className="text-[11px] uppercase tracking-[0.08em] text-neutral-500">
+                        d
+                      </span>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={MIN_DEPOSIT_REFUND_WINDOW_DAYS}
+                    max={MAX_DEPOSIT_REFUND_WINDOW_DAYS}
+                    value={selectedRefundCutoffDays}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      const safeNext = Number.isNaN(next)
+                        ? DEFAULT_DEPOSIT_REFUND_WINDOW_DAYS
+                        : next;
+                      setCustomRefundCutoffDays(safeNext);
+                    }}
+                    style={{
+                      background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${((selectedRefundCutoffDays - MIN_DEPOSIT_REFUND_WINDOW_DAYS) /
+                        (MAX_DEPOSIT_REFUND_WINDOW_DAYS -
+                          MIN_DEPOSIT_REFUND_WINDOW_DAYS)) *
+                        100
+                      }%, var(--create-slider-track) ${((selectedRefundCutoffDays - MIN_DEPOSIT_REFUND_WINDOW_DAYS) /
+                        (MAX_DEPOSIT_REFUND_WINDOW_DAYS -
+                          MIN_DEPOSIT_REFUND_WINDOW_DAYS)) *
+                        100
+                      }%, var(--create-slider-track) 100%)`,
+                    }}
+                    className="deposit-slider h-1.5 w-full cursor-pointer appearance-none rounded-full accent-[var(--primary)]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
   const deliverablesSection = (
     <section id="deliverables" className="scroll-mt-24">
       <div
@@ -1441,12 +1899,14 @@ export default function CreatePaymentLinkPage() {
             }}
             aria-pressed={requireDeposit}
             className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition ${
-              requireDeposit ? 'border-black bg-black' : 'border-neutral-300 bg-neutral-100'
+              requireDeposit
+                ? 'border-[var(--primary)] bg-[var(--primary)]'
+                : 'border-neutral-300 bg-neutral-100'
             }`}
           >
             <span
-              className={`absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition ${
-                requireDeposit ? 'translate-x-5' : 'translate-x-0'
+              className={`absolute left-1 h-4 w-4 rounded-full shadow-sm transition ${
+                requireDeposit ? 'translate-x-5 bg-white' : 'translate-x-0 bg-neutral-500'
               }`}
             />
           </button>
@@ -1465,7 +1925,7 @@ export default function CreatePaymentLinkPage() {
                 }}
                 className={`h-10 rounded-xl text-[13px] font-medium transition ${
                   depositMode === 'percent'
-                    ? 'dfn-inverse-control bg-black text-white'
+                    ? 'dfn-inverse-control bg-[var(--primary)] text-white'
                     : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
@@ -1481,7 +1941,7 @@ export default function CreatePaymentLinkPage() {
                 }}
                 className={`h-10 rounded-xl text-[13px] font-medium transition ${
                   depositMode === 'fixed'
-                    ? 'dfn-inverse-control bg-black text-white'
+                    ? 'dfn-inverse-control bg-[var(--primary)] text-white'
                     : 'text-neutral-600 hover:bg-neutral-50'
                 }`}
               >
@@ -1508,7 +1968,7 @@ export default function CreatePaymentLinkPage() {
                     style={{
                       background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${depositPercentValue}%, var(--create-slider-track) ${depositPercentValue}%, var(--create-slider-track) 100%)`,
                     }}
-                    className="deposit-slider h-1.5 flex-1 cursor-pointer appearance-none rounded-full accent-black"
+                    className="deposit-slider h-1.5 flex-1 cursor-pointer appearance-none rounded-full accent-[var(--primary)]"
                   />
                   <div className="flex h-9 w-[74px] items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-2 text-[14px] text-neutral-900">
                     <input
@@ -1590,16 +2050,16 @@ export default function CreatePaymentLinkPage() {
               </div>
               <div className="flex items-center justify-between text-neutral-500">
                 <span>Platform fee (5%)</span>
-                <span>{formatZar(platformFee)}</span>
+                <span>{formatZar(serviceProcessingFeeAmount)}</span>
               </div>
               <div className="flex items-center justify-between font-semibold text-neutral-900">
                 <span>You receive</span>
-                <span>{formatZar(youReceive)}</span>
+                <span>{formatZar(totalNetAmount)}</span>
               </div>
             </div>
             <div className="flex items-center justify-between border-t border-neutral-200 px-4 py-4 font-semibold text-neutral-900">
               <span>Total client pays</span>
-              <span>{formatZar(clientPays)}</span>
+              <span>{formatZar(totalChargeAmount)}</span>
             </div>
           </>
         ) : (
@@ -1621,15 +2081,15 @@ export default function CreatePaymentLinkPage() {
                 </div>
                 <div className="flex items-center justify-between text-neutral-500">
                   <span>Platform fee (5%)</span>
-                  <span>{formatZar(depositFee)}</span>
+                  <span>{formatZar(depositProcessingFeeAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-[13.5px] font-semibold text-neutral-900">
                   <span>Client pays now</span>
-                  <span>{formatZar(clientPaysNow)}</span>
+                  <span>{formatZar(depositChargeAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-[13.5px] font-semibold text-neutral-900">
                   <span>You receive now</span>
-                  <span>{formatZar(depositAmount)}</span>
+                  <span>{formatZar(netAmountAfterProcessingFee(depositAmount))}</span>
                 </div>
               </div>
             </div>
@@ -1651,22 +2111,22 @@ export default function CreatePaymentLinkPage() {
                 </div>
                 <div className="flex items-center justify-between text-neutral-500">
                   <span>Platform fee (5%)</span>
-                  <span>{formatZar(remainderFee)}</span>
+                  <span>{formatZar(remainderProcessingFeeAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-[13.5px] font-semibold text-neutral-900">
                   <span>Client pays later</span>
-                  <span>{formatZar(clientPaysLater)}</span>
+                  <span>{formatZar(remainderChargeAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between text-[13.5px] font-semibold text-neutral-900">
                   <span>You receive later</span>
-                  <span>{formatZar(remainderAmount)}</span>
+                  <span>{formatZar(netAmountAfterProcessingFee(remainderAmount))}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between border-t border-neutral-200 px-4 py-4 font-semibold text-neutral-900">
               <span>Total client pays</span>
-              <span>{formatZar(clientPays)}</span>
+              <span>{formatZar(totalChargeAmount)}</span>
             </div>
           </>
         )}
@@ -1833,7 +2293,7 @@ export default function CreatePaymentLinkPage() {
 
       <div className="mt-5 rounded-3xl border border-neutral-200 bg-white px-4 py-5 sm:px-6 sm:py-6">
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.24em] text-neutral-500">
-          Step 05 · Commit
+          Commit
         </p>
         <h3 className="mt-4 text-[30px] font-medium leading-[1.08] tracking-[-0.02em] text-black">
           Send it, or <span className="italic text-neutral-500">save</span> it for later.
@@ -1883,7 +2343,6 @@ export default function CreatePaymentLinkPage() {
         <div className="mt-4 border-t border-neutral-200 pt-4">
           <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--app-muted)]">
             <span>Secured by</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <span className="inline-flex h-6 items-center rounded-full bg-white px-2.5">
               <img src="/images/paystack-2.svg" alt="Paystack" className="h-3.5 w-auto" />
             </span>
@@ -1963,8 +2422,8 @@ export default function CreatePaymentLinkPage() {
                     request.
                   </h1>
                   <p className="mt-3 max-w-[520px] text-[14px] leading-6 text-[var(--app-muted)]">
-                    Four steps. Tell your client what the shoot is, how much it
-                    costs, and where to send the link.
+                    Five steps. Tell your client what the shoot is, how much it
+                    costs, what terms apply, and where to send the link.
                   </p>
 
                   <div className="mt-6 space-y-4">
@@ -2010,6 +2469,23 @@ export default function CreatePaymentLinkPage() {
                         </p>
                         <div>
                           <h2 className="font-display text-[22px] font-medium tracking-normal">
+                            Terms
+                          </h2>
+                          <p className="mt-1 text-[12.5px] text-neutral-500">
+                            Define how this booking works.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3">{policiesSection}</div>
+                    </section>
+
+                    <section className="border-t border-neutral-200 pt-4">
+                      <div className="grid gap-4 sm:grid-cols-[24px_minmax(0,1fr)]">
+                        <p className="text-[11px] font-semibold tracking-[0.12em] text-neutral-500">
+                          04
+                        </p>
+                        <div>
+                          <h2 className="font-display text-[22px] font-medium tracking-normal">
                             Deliverables
                           </h2>
                           <p className="mt-1 text-[12.5px] text-neutral-500">
@@ -2023,7 +2499,7 @@ export default function CreatePaymentLinkPage() {
                     <section className="border-t border-neutral-200 pt-4">
                       <div className="grid gap-4 sm:grid-cols-[24px_minmax(0,1fr)]">
                         <p className="text-[11px] font-semibold tracking-[0.12em] text-neutral-500">
-                          04
+                          05
                         </p>
                         <div>
                           <h2 className="font-display text-[22px] font-medium tracking-normal">
@@ -2146,6 +2622,49 @@ export default function CreatePaymentLinkPage() {
                 </button>
               </div>
 
+              <div className="mt-5 border-t border-[rgba(255,255,255,0.08)] pt-5">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-white/70">
+                  Terms & policies
+                </p>
+                <div className="mt-4 space-y-3 text-[12.5px]">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+                    <span className="text-white/65">Processing fee</span>
+                    <span className="text-right font-semibold text-white">
+                      {processingFeeSummaryText}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+                    <span className="text-white/65">Refund policy</span>
+                    <span className="text-right font-semibold text-white">
+                      {refundPolicySummaryText}
+                    </span>
+                  </div>
+                  <p className="text-[12px] leading-5 text-white/70">
+                    <span className="font-semibold text-white">
+                      {refundPolicySummaryText}
+                    </span>{' '}
+                    if the client cancels at least{' '}
+                    <span className="font-semibold text-white">
+                      {selectedRefundCutoffDays} days
+                    </span>{' '}
+                    before the shoot. After that, no refund.
+                  </p>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
+                    <span className="text-white/65">Cancellation</span>
+                    <span className="text-right font-semibold text-white">
+                      {selectedRefundPercent >= 75
+                        ? 'Flexible'
+                        : selectedRefundPercent >= 25
+                          ? 'Moderate'
+                          : 'Strict'}
+                    </span>
+                  </div>
+                  <p className="text-[12px] leading-5 text-white/70">
+                    {refundPolicyDescriptionText}
+                  </p>
+                </div>
+              </div>
+
             </div>
           </aside>
         </main>
@@ -2213,16 +2732,12 @@ export default function CreatePaymentLinkPage() {
 
             <a
               href={GOOGLE_AUTH_URL}
-              className="flex h-[50px] w-full items-center justify-center gap-2.5 rounded-[16px] border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-5 text-[13px] font-semibold text-[var(--app-foreground)] transition hover:border-[var(--app-muted-soft)] hover:bg-[var(--app-surface-strong)] active:scale-[0.99]"
+              className="flex h-[50px] w-full items-center justify-start gap-2.5 rounded-[16px] border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-5 text-[13px] font-semibold text-[var(--app-foreground)] transition hover:border-[var(--app-muted-soft)] hover:bg-[var(--app-surface-strong)] active:scale-[0.99]"
             >
-              <FcGoogle className="h-4 w-4" />
+              <FcGoogle className="h-4 w-4 shrink-0" />
               <span>Continue with Google</span>
             </a>
           </div>
-
-          <p className="mt-6 text-center text-[9.5px] font-semibold uppercase tracking-[0.3em] text-[var(--app-muted)]">
-            Your draft is kept on this device
-          </p>
         </DialogPanel>
       </Dialog>
     </>

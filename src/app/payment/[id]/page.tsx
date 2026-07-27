@@ -8,6 +8,12 @@ import {
   ArrowRightIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
+import {
+  type CancellationPolicy,
+  getCancellationPolicyMeta,
+  getRefundPolicySummary,
+  getProcessingFeeSummary,
+} from '../../../lib/payment-policies';
 
 const PAYMENTS_BASE_URL =
   process.env.NEXT_PUBLIC_PAYMENTS_URL ?? 'http://localhost:3004';
@@ -38,6 +44,11 @@ export type PaymentIntent = {
   deliveryDate: string;
   currency: string;
   totalAmount: number;
+  requireDeposit?: boolean;
+  passProcessingFeesToClient?: boolean;
+  allowDepositRefunds?: boolean;
+  depositRefundWindowDays?: number;
+  cancellationPolicy?: CancellationPolicy;
   schedules: PaymentSchedule[];
   deliverables?: Deliverable[];
   provider?: {
@@ -293,8 +304,23 @@ export default function PaymentLinkPage({
   const invoiceReference = formatInvoiceReference(reference);
   const shootDateLabel = formatDate(intent.shootDate);
   const shootMetaLabel = formatShootMeta(intent.serviceDescription);
+  const processingFeeSummary = getProcessingFeeSummary(
+    Boolean(intent.passProcessingFeesToClient),
+  );
+  const refundPolicySummary = getRefundPolicySummary(
+    Boolean(intent.requireDeposit ?? schedules.length > 1),
+    intent.depositRefundWindowDays ?? 7,
+  );
+  const cancellationPolicyMeta = getCancellationPolicyMeta(
+    intent.cancellationPolicy,
+  );
   const activeAmount = activeSchedule?.amount ?? intent.totalAmount;
-  const remainingAmount = Math.max(intent.totalAmount - activeAmount, 0);
+  const remainingAmount = schedules
+    .filter(
+      (schedule) =>
+        schedule.status !== 'paid' && schedule.id !== activeSchedule?.id,
+    )
+    .reduce((sum, schedule) => sum + schedule.amount, 0);
   const splitPercent =
     intent.totalAmount > 0 ? Math.round((activeAmount / intent.totalAmount) * 100) : 100;
   const paymentOptionLabel =
@@ -459,6 +485,45 @@ export default function PaymentLinkPage({
                 : 'Card, EFT, or mobile money — no account needed.'}
             </p>
             {payError && <p className="mt-4 rounded-lg bg-white/10 p-3 text-[12px] text-white">{payError}</p>}
+          </section>
+
+          <section className="mt-5 rounded-2xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5">
+            <p className="font-display text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[var(--app-muted-soft)]">
+              Terms & policies
+            </p>
+            <div className="mt-4 space-y-3 text-[13px]">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4">
+                <span className="text-[var(--app-muted)]">{processingFeeSummary.label}</span>
+                <span className="text-right font-semibold text-[var(--app-foreground-strong)]">
+                  {processingFeeSummary.value}
+                </span>
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4">
+                <span className="text-[var(--app-muted)]">{refundPolicySummary.label}</span>
+                <span className="text-right font-semibold text-[var(--app-foreground-strong)]">
+                  {refundPolicySummary.value}
+                </span>
+              </div>
+              <p className="text-[12px] leading-5 text-[var(--app-muted)]">
+                <span className="font-semibold text-[var(--app-foreground-strong)]">
+                  {refundPolicySummary.value}
+                </span>{' '}
+                if the client cancels at least{' '}
+                <span className="font-semibold text-[var(--app-foreground-strong)]">
+                  {refundPolicySummary.days} days
+                </span>{' '}
+                before the shoot. After that, no refund.
+              </p>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4">
+                <span className="text-[var(--app-muted)]">Cancellation</span>
+                <span className="text-right font-semibold text-[var(--app-foreground-strong)]">
+                  {cancellationPolicyMeta.label}
+                </span>
+              </div>
+              <p className="text-[12px] leading-5 text-[var(--app-muted)]">
+                {cancellationPolicyMeta.description}
+              </p>
+            </div>
           </section>
 
           <footer className="mt-8 border-t border-[var(--app-border)] py-6 text-center text-[11.5px] text-[var(--app-muted)]">

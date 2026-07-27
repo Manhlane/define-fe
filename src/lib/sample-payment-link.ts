@@ -12,6 +12,11 @@ export const SAMPLE_PAYMENT_INTENT = {
   deliveryDate: '2026-08-01T10:00:00.000Z',
   currency: 'ZAR',
   totalAmount: 8500,
+  requireDeposit: true,
+  passProcessingFeesToClient: false,
+  allowDepositRefunds: false,
+  depositRefundWindowDays: 7,
+  cancellationPolicy: 'flexible' as const,
   schedules: [
     {
       id: 'sample-deposit',

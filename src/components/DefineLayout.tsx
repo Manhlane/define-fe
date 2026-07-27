@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useState, type ComponentProps, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentProps,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import {
@@ -13,10 +20,18 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
+  MoonIcon,
+  SunIcon,
 } from '@heroicons/react/24/outline'
+import {
+  DEFAULT_THEME,
+  isDfnTheme,
+  THEME_STORAGE_KEY,
+  type DfnTheme,
+} from '@/src/lib/theme'
 
 // Navigation
-type IconComponent = (props: ComponentProps<'svg'>) => ReactNode
+type IconComponent = ComponentType<ComponentProps<'svg'>>
 
 type NavItem = {
   name: string
@@ -73,6 +88,7 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [theme, setTheme] = useState<DfnTheme>(DEFAULT_THEME);
 
   const handleGlobalLogout = useCallback(async () => {
     if (isLoggingOut) return;
@@ -128,6 +144,45 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     //setIsLoggingOut(false);
   }, [isLoggingOut, router]);
 
+  const syncThemeState = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_THEME;
+    }
+
+    try {
+      const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+      const rootTheme = document.documentElement.dataset.theme ?? null;
+      const activeTheme = isDfnTheme(savedTheme)
+        ? savedTheme
+        : isDfnTheme(rootTheme)
+          ? rootTheme
+          : DEFAULT_THEME;
+
+      document.documentElement.dataset.theme = activeTheme;
+      setTheme(activeTheme);
+      return activeTheme;
+    } catch {
+      document.documentElement.dataset.theme = DEFAULT_THEME;
+      setTheme(DEFAULT_THEME);
+      return DEFAULT_THEME;
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((currentTheme) => {
+      const nextTheme = currentTheme === 'midnight' ? 'daytime' : 'midnight';
+
+      try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      } catch {
+        // The visual switch still works when storage is unavailable.
+      }
+
+      document.documentElement.dataset.theme = nextTheme;
+      return nextTheme;
+    });
+  }, []);
+
   useEffect(() => {
     if (!pathname) {
       return;
@@ -136,6 +191,19 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
     const resolved = resolveNavByPath(pathname);
     setActive(resolved);
   }, [pathname]);
+
+  useEffect(() => {
+    syncThemeState();
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === THEME_STORAGE_KEY) {
+        syncThemeState();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [syncThemeState]);
 
   const isFullBleedRoute =
     pathname?.startsWith('/create-payment-link') || pathname?.startsWith('/transactions');
@@ -187,6 +255,39 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
           {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
         </button>
       </li>
+    )
+  }
+
+  const renderThemeToggle = () => {
+    const isDaytime = theme === 'daytime';
+    const nextThemeLabel = isDaytime ? 'Midnight' : 'Daytime';
+
+    return (
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={`Switch to ${nextThemeLabel} theme`}
+        aria-pressed={isDaytime}
+        className={classNames(
+          isDaytime
+            ? 'bg-[var(--app-accent-soft)] text-[var(--app-foreground)] shadow-[inset_0_0_0_1px_var(--app-border-soft)]'
+            : 'hover:bg-[var(--app-hover-bg)]',
+          'group flex w-full items-center gap-x-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[var(--app-muted)] transition disabled:cursor-not-allowed disabled:opacity-60'
+        )}
+      >
+        {isDaytime ? (
+          <MoonIcon
+            aria-hidden="true"
+            className="h-5 w-5 shrink-0 text-[var(--app-accent-strong)]"
+          />
+        ) : (
+          <SunIcon
+            aria-hidden="true"
+            className="h-5 w-5 shrink-0 text-[var(--app-muted)] group-hover:text-[var(--app-foreground)]"
+          />
+        )}
+        {!sidebarCollapsed && <span className="truncate">{`${nextThemeLabel} theme`}</span>}
+      </button>
     )
   }
 
@@ -262,6 +363,10 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
               </div>
               <div className="my-4 border-t border-[var(--app-border)]" />
               <ul role="list" className="space-y-1">
+                <li>{renderThemeToggle()}</li>
+              </ul>
+              <div className="my-4 border-t border-[var(--app-border)]" />
+              <ul role="list" className="space-y-1">
                 {bottomNav.map(renderNavItem)}
               </ul>
             </div>
@@ -300,6 +405,12 @@ export default function DefineLayout({ children }: { children: ReactNode }) {
                 </ul>
               </nav>
             </div>
+            <div className="my-4 border-t border-[var(--app-border)]" />
+            <nav>
+              <ul role="list" className="space-y-1">
+                <li>{renderThemeToggle()}</li>
+              </ul>
+            </nav>
             <div className="my-4 border-t border-[var(--app-border)]" />
             <nav>
               <ul role="list" className="space-y-1">
